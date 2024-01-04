@@ -16,13 +16,19 @@ const Invoices = () => {
   const generateTableData = (data) => {
     const temp = data.map((item) => {
       return {
-        ID: item.invoiceId,
+        Id: item.invoiceId,
         Name: item.invoiceName,
         vendorName: item.vendorName,
         Project: item.projectName,
         amount: item.billingAmount,
         startDate: moment(item.billingStartTime).format("MMMM Do YYYY"),
         endDate: moment(item.billingEndTime).format("MMMM Do YYYY"),
+        Action: {
+          name: "View Details",
+          handleClick: (id) => {
+            console.log("ID", id);
+          },
+        },
       };
     });
     console.log("Checking Temp", temp);

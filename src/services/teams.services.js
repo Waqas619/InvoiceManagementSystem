@@ -1,0 +1,34 @@
+//import { setItem, clearStorage } from "../utils/storage";
+import { request } from "./verb.services";
+
+export const getTeams = async (onSucess, onError) => {
+  return request("teams", "get", null, false)
+    .then(async ({ data }) => {
+      console.log("Teams List", data);
+      onSucess(data);
+    })
+    .catch(function (error) {
+      if (error.response) {
+        onError();
+      } else {
+      }
+    });
+};
+
+export const getTeamsByTeamID = async (teamId, onSucess, onError) => {
+  return request(`teams/${teamId}`, "get", null, false)
+    .then(async ({ data }) => {
+      console.log("Selected Team", data);
+      onSucess(data);
+    })
+    .catch(function (error) {
+      if (error.response) {
+        onError();
+      } else {
+      }
+    });
+};
+
+export const LogoutUser = () => {
+  localStorage.clear();
+};

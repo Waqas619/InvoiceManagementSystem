@@ -1,0 +1,6 @@
+.logo {
+  background-image: url("../../assets/Logo.svg");
+  background-repeat: no-repeat;
+  color: transparent;
+  background-size: contain;
+}

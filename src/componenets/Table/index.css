@@ -1,0 +1,39 @@
+.ag-theme-alpine {
+  --ag-foreground-color: black;
+  --ag-header-background-color: rgb(32, 77, 136);
+  --ag-odd-row-background-color: rgb(251, 248, 248);
+  --ag-header-column-resize-handle-color: grey;
+  --ag-font-size: 17px;
+  --ag-font-family: monospace;
+}
+
+.ag-header-icon.ag-header-cell-menu-button {
+  opacity: 1 !important;
+}
+.ag-filter-toolpanel-group-title {
+  color: black !important;
+}
+
+.ag-icon .ag-icon-tree-closed {
+  color: black !important;
+}
+
+.ag-header-cell-label {
+  color: white !important;
+}
+
+.ag-header-icon {
+  color: white !important;
+}
+
+.ag-header-cell-moving {
+  background-color: rgb(32, 77, 136) !important;
+  color: white !important;
+}
+
+.ag-root-wrapper-body.ag-layout-normal {
+}
+
+.ag-icon {
+  color: white;
+}

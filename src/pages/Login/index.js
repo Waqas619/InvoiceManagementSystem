@@ -42,7 +42,7 @@ const Login = () => {
             autoComplete="off"
           >
             <Form.Item
-              label="Email"
+              label="Username"
               name="username"
               rules={[
                 {

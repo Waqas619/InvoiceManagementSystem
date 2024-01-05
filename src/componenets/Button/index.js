@@ -9,7 +9,13 @@ const CustomButton = (props) => {
     customStyle = {},
   } = props;
   return (
-    <Button disabled={isLoading} onClick={onClick} style={{ ...customStyle }}>
+    <Button
+      disabled={isLoading}
+      onClick={() => {
+        onClick();
+      }}
+      style={{ ...customStyle }}
+    >
       {text}
     </Button>
   );

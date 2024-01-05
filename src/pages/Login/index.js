@@ -12,7 +12,6 @@ import { useNavigate } from "react-router-dom";
 const Login = () => {
   const nav = useNavigate();
   const onFinish = (values) => {
-    console.log("Success:", values);
     loginUser(
       values,
       () => {
@@ -21,9 +20,7 @@ const Login = () => {
       () => {}
     );
   };
-  const onFinishFailed = (errorInfo) => {
-    console.log("Failed:", errorInfo);
-  };
+
   return (
     <Row style={{ height: "100%" }}>
       <Col flex={5} className={styles.formCard}>

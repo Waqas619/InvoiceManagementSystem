@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../../componenets/Layout";
+import { getItem } from "../../utils/storage";
 import {
   Card,
   Button,
@@ -9,6 +10,7 @@ import {
   DatePicker,
   Select,
   Tooltip,
+  Skeleton,
 } from "antd";
 import {
   UserOutlined,
@@ -23,39 +25,57 @@ import { getAllProjects } from "../../services/projects.services";
 import styles from "./index.module.css";
 import {
   createInvoice,
+  deleteInvoice,
+  getInvoiceByInvoiceId,
+  updateInvoice,
+  updateInvoiceStatus,
   validateJiraHours,
 } from "../../services/invoices.services";
-import moment from "moment";
 import { DateFormater } from "../../utils/helperFunctions";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const InvoiceDetails = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [form] = Form.useForm();
+  const [remarksForm] = Form.useForm();
+  const user = getItem("user");
+
+  const [loadingData, setLoadingData] = useState(false);
   const [addUserToTeam, setAddingUserToTeam] = useState(false);
   const [loadingAddUser, setLoadingAddUser] = useState(false);
   const [loadingValidate, setLoadingValidate] = useState(false);
   const [validatedHours, setValidatedHours] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [viewMode, setViewMode] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState({
+    APPROVE: false,
+    NEED_CLARIFICATION: false,
+    REJECT: false,
+  });
 
   const onFinishAddUser = async (values) => {
     if (validatedHours) {
       setLoadingAddUser(true);
       const formData = new FormData();
-
       const temp = Object.keys(values);
-      console.log("TEMP", temp);
       temp.map((item) => {
-        console.log("Checking map", values[item]);
         formData.append(`${item}`, values[item]);
       });
       const invoiceForm = new FormData();
       invoiceForm.append("invoice", JSON.stringify(values));
-      const data = createInvoice(invoiceForm);
-
-      setTimeout(() => {
-        setLoadingAddUser(false);
-        setAddingUserToTeam(false);
-      }, 5000);
+      const queryParams = new URLSearchParams(location.search);
+      const invoiceId = queryParams.get("id");
+      if (invoiceId) {
+        await updateInvoice(invoiceId, invoiceForm);
+      } else {
+        await createInvoice(invoiceForm);
+      }
+      setLoadingAddUser(false);
+      setAddingUserToTeam(false);
+      navigate("/invoices");
     } else {
-      console.log("Checking Values", values.billingStartTime);
       setLoadingValidate(true);
       const request = {
         teamId: values.teamId,
@@ -63,7 +83,6 @@ const InvoiceDetails = () => {
         billingEndDate: DateFormater(values.billingEndTime),
         totalHours: values.numberOfHours,
       };
-      console.log("request", request);
       const data = await validateJiraHours(request);
       setLoadingValidate(false);
       if (data === true) {
@@ -75,8 +94,56 @@ const InvoiceDetails = () => {
   const loadDetails = async () => {
     const projectData = await getAllProjects();
     setProjects(projectData);
+    if (window.location.pathname.includes("/InvoiceDetails")) {
+      const queryParams = new URLSearchParams(location.search);
+      const invoiceId = queryParams.get("id");
+
+      if (invoiceId) {
+        setLoadingData(true);
+        const data = await getInvoiceByInvoiceId(invoiceId);
+        form.setFieldsValue({
+          ["invoiceName"]: data?.invoiceName,
+          ["vendorName"]: data?.vendorName,
+          ["summary"]: data?.summary,
+          // ["billingStartTime"]: new Date(data?.billingStartTime),
+          // ["billingEndTime"]: new Date(data?.billingEndTime),
+          ["projectId"]: data?.projectId,
+          ["billingAmount"]: data?.billingAmount,
+          ["jiraTimesheetUrl"]: data?.jiraTimesheetUrl,
+          ["teamId"]: data?.teamId,
+          ["numberOfHours"]: data?.numberOfHours,
+        });
+        setLoadingData(false);
+        if (
+          user.role === "Partner" &&
+          (data.status === "REJECT" || data.status === "NEED_CLARIFICATION")
+        ) {
+          setViewMode(false);
+        } else {
+          setViewMode(true);
+        }
+      }
+    }
   };
 
+  const handleDelete = async () => {
+    setLoadingDelete(true);
+    const queryParams = new URLSearchParams(location.search);
+    const invoiceId = queryParams.get("id");
+    const data = await deleteInvoice(invoiceId);
+    navigate("/invoices");
+  };
+
+  const updateStatus = async (data) => {
+    setLoadingStatus({ ...loadingStatus, [data]: true });
+    const remarks = remarksForm.getFieldValue(["remarks"]);
+    const queryParams = new URLSearchParams(location.search);
+    const invoiceId = queryParams.get("id");
+    const temp = await updateInvoiceStatus(invoiceId, data, {
+      remarks: remarks,
+    });
+    navigate("/Invoices");
+  };
   useEffect(() => {
     loadDetails();
   }, []);
@@ -93,12 +160,19 @@ const InvoiceDetails = () => {
           }`}
           extra={[
             <>
-              {window.location.pathname === "/InvoiceDetails" && (
-                <Button style={{ color: "red", borderColor: "red" }}>
-                  <DeleteOutlined />
-                  Delete Invoice
-                </Button>
-              )}
+              {window.location.pathname === "/InvoiceDetails" &&
+                (user.role === "Admin" || user.role === "Partner") && (
+                  <Button
+                    style={{ color: "red", borderColor: "red" }}
+                    loading={loadingDelete}
+                    onClick={() => {
+                      handleDelete();
+                    }}
+                  >
+                    <DeleteOutlined />
+                    Delete Invoice
+                  </Button>
+                )}
             </>,
           ]}
         >
@@ -122,155 +196,187 @@ const InvoiceDetails = () => {
             ]}
           />
         </Card>
-        <div className={styles.cardContainer}>
-          <Form
-            layout="vertical"
-            name="normal_login"
-            className={styles.formContainer}
-            initialValues={{
-              remember: true,
-            }}
-            onFinish={onFinishAddUser}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
+        {loadingData ? (
+          <>
+            <Skeleton />
+            <Skeleton />
+            <Skeleton />
+          </>
+        ) : (
+          <div className={styles.cardContainer}>
+            <Form
+              form={form}
+              layout="vertical"
+              name="normal_login"
+              className={styles.formContainer}
+              initialValues={{
+                remember: true,
               }}
+              onFinish={onFinishAddUser}
             >
-              <Form.Item
-                name="invoiceName"
-                label="Invoice Name"
-                style={{ width: "48%" }}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input the invoice name!",
-                  },
-                ]}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
               >
-                <Input
-                  disabled={loadingAddUser}
-                  className={styles.formInputs}
-                  placeholder="Enter Invoice Name"
-                  prefix={
-                    <UserOutlined
-                      className="site-form-item-icon"
-                      style={{ marginRight: "10px" }}
-                    />
-                  }
-                />
-              </Form.Item>
-              <Form.Item
-                name="vendorName"
-                label="Vendor Name"
-                style={{ width: "48%" }}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input the vendor name!",
-                  },
-                ]}
-              >
-                <Input
-                  disabled={loadingAddUser}
-                  className={styles.formInputs}
-                  placeholder="Enter the vendor name"
-                  prefix={
-                    <UserOutlined
-                      className="site-form-item-icon"
-                      style={{ marginRight: "10px" }}
-                    />
-                  }
-                />
-              </Form.Item>
-            </div>
-            <Form.Item
-              name="summary"
-              label="Invoice Summary"
-              rules={[
-                {
-                  required: true,
-                  message: "Please input the summary of the invoice!",
-                },
-              ]}
-            >
-              <Input
-                disabled={loadingAddUser}
-                className={styles.formInputs}
-                placeholder="Enter Summary Of The Invoice"
-                prefix={
-                  <UserOutlined
-                    className="site-form-item-icon"
-                    style={{ marginRight: "10px" }}
+                <Form.Item
+                  name="invoiceName"
+                  label="Invoice Name"
+                  style={{ width: "48%" }}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please input the invoice name!",
+                    },
+                  ]}
+                >
+                  <Input
+                    disabled={loadingAddUser || viewMode}
+                    className={styles.formInputs}
+                    placeholder="Enter Invoice Name"
+                    prefix={
+                      <UserOutlined
+                        className="site-form-item-icon"
+                        style={{ marginRight: "10px" }}
+                      />
+                    }
                   />
-                }
-              />
-            </Form.Item>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-              }}
-            >
+                </Form.Item>
+                <Form.Item
+                  name="vendorName"
+                  label="Vendor Name"
+                  style={{ width: "48%" }}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please input the vendor name!",
+                    },
+                  ]}
+                >
+                  <Input
+                    disabled={loadingAddUser || viewMode}
+                    className={styles.formInputs}
+                    placeholder="Enter the vendor name"
+                    prefix={
+                      <UserOutlined
+                        className="site-form-item-icon"
+                        style={{ marginRight: "10px" }}
+                      />
+                    }
+                  />
+                </Form.Item>
+              </div>
               <Form.Item
-                name="billingStartTime"
-                label="Billing Period Start"
-                style={{ marginRight: "50px" }}
+                name="summary"
+                label="Invoice Summary"
                 rules={[
                   {
                     required: true,
-                    message: "Please input the start date!",
+                    message: "Please input the summary of the invoice!",
                   },
                 ]}
               >
-                <DatePicker
-                  disabled={validatedHours}
-                  placeholder="Enter the start date"
-                  size="large"
+                <Input
+                  disabled={loadingAddUser || viewMode}
+                  className={styles.formInputs}
+                  placeholder="Enter Summary Of The Invoice"
+                  prefix={
+                    <UserOutlined
+                      className="site-form-item-icon"
+                      style={{ marginRight: "10px" }}
+                    />
+                  }
                 />
               </Form.Item>
-              <Form.Item
-                name="billingEndTime"
-                label="Billing Period End"
-                style={{ marginRight: "50px" }}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input the end date!",
-                  },
-                ]}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                }}
               >
-                <DatePicker
-                  disabled={validatedHours}
-                  placeholder="Enter the end date"
-                  size="large"
-                />
-              </Form.Item>
+                <Form.Item
+                  name="billingStartTime"
+                  label="Billing Period Start"
+                  style={{ marginRight: "50px" }}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please input the start date!",
+                    },
+                  ]}
+                >
+                  <DatePicker
+                    disabled={validatedHours || viewMode}
+                    placeholder="Enter the start date"
+                    size="large"
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="billingEndTime"
+                  label="Billing Period End"
+                  style={{ marginRight: "50px" }}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please input the end date!",
+                    },
+                  ]}
+                >
+                  <DatePicker
+                    disabled={validatedHours || viewMode}
+                    placeholder="Enter the end date"
+                    size="large"
+                  />
+                </Form.Item>
+                <Form.Item
+                  label="Project"
+                  name="projectId"
+                  style={{ width: "80%" }}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please input the end date!",
+                    },
+                  ]}
+                >
+                  <Select size="large" disabled={loadingAddUser || viewMode}>
+                    {projects.map((item) => (
+                      <Select.Option value={item.projectID}>
+                        {item.projectName}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  label="Billing Amount"
+                  name="billingAmount"
+                  style={{ marginLeft: "50px" }}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please input the Jira Timesheet Url!",
+                    },
+                  ]}
+                >
+                  <Input
+                    disabled={loadingAddUser || viewMode}
+                    className={styles.formInputs}
+                    size="large"
+                    placeholder="Enter Billing Amount"
+                    prefix={
+                      <DollarOutlined
+                        className="site-form-item-icon"
+                        style={{ marginRight: "10px" }}
+                      />
+                    }
+                  />
+                </Form.Item>
+              </div>
+
               <Form.Item
-                label="Project"
-                name="projectId"
-                style={{ width: "80%" }}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input the end date!",
-                  },
-                ]}
-              >
-                <Select size="large">
-                  {projects.map((item) => (
-                    <Select.Option value={item.projectID}>
-                      {item.projectName}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              <Form.Item
-                label="Billing Amount"
-                name="billingAmount"
-                style={{ marginLeft: "50px" }}
+                name="jiraTimesheetUrl"
                 rules={[
                   {
                     required: true,
@@ -279,141 +385,206 @@ const InvoiceDetails = () => {
                 ]}
               >
                 <Input
-                  disabled={loadingAddUser}
+                  disabled={loadingAddUser || viewMode}
                   className={styles.formInputs}
-                  size="large"
-                  placeholder="Enter Billing Amount"
+                  placeholder="Enter the Jira Timesheet Url"
                   prefix={
-                    <DollarOutlined
+                    <IeOutlined
                       className="site-form-item-icon"
                       style={{ marginRight: "10px" }}
                     />
                   }
                 />
               </Form.Item>
-            </div>
-
-            <Form.Item
-              name="jiraTimesheetUrl"
-              rules={[
-                {
-                  required: true,
-                  message: "Please input the Jira Timesheet Url!",
-                },
-              ]}
-            >
-              <Input
-                disabled={loadingAddUser}
-                className={styles.formInputs}
-                placeholder="Enter the Jira Timesheet Url"
-                prefix={
-                  <IeOutlined
-                    className="site-form-item-icon"
-                    style={{ marginRight: "10px" }}
-                  />
-                }
-              />
-            </Form.Item>
-            <Form.Item
-              name="teamId"
-              rules={[
-                {
-                  required: true,
-                  message: "Please input the Team Id!",
-                },
-              ]}
-            >
-              <Input
-                disabled={validatedHours}
-                className={styles.formInputs}
-                placeholder="Enter the Team Id"
-                prefix={
-                  <KeyOutlined
-                    className="site-form-item-icon"
-                    style={{ marginRight: "10px" }}
-                  />
-                }
-              />
-            </Form.Item>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-              }}
-            >
               <Form.Item
-                name="numberOfHours"
-                style={{ width: "100%" }}
+                name="teamId"
                 rules={[
                   {
                     required: true,
-                    message: "Please input the Number Of Hours!",
+                    message: "Please input the Team Id!",
                   },
                 ]}
               >
                 <Input
-                  disabled={validatedHours}
+                  disabled={validatedHours || viewMode}
                   className={styles.formInputs}
-                  placeholder="Enter the Number Of Hours"
+                  placeholder="Enter the Team Id"
                   prefix={
-                    <ClockCircleOutlined
+                    <KeyOutlined
                       className="site-form-item-icon"
                       style={{ marginRight: "10px" }}
                     />
                   }
                 />
               </Form.Item>
-              <Button
-                style={{ marginLeft: "50px" }}
-                size="large"
-                htmlType="submit"
-                loading={loadingValidate}
-                disabled={validatedHours}
-                onClick={() => {
-                  setAddingUserToTeam(false);
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
                 }}
               >
-                Validate Hours
-              </Button>
-            </div>
-            <Form.Item>
-              <div className={styles.btnContainer}>
-                <Button
-                  style={{ color: "red", borderColor: "red" }}
-                  onClick={() => {
-                    setAddingUserToTeam(false);
-                  }}
+                <Form.Item
+                  name="numberOfHours"
+                  style={{ width: "100%" }}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please input the Number Of Hours!",
+                    },
+                  ]}
                 >
-                  Cancel
-                </Button>
-                {validatedHours ? (
+                  <Input
+                    disabled={validatedHours || viewMode}
+                    className={styles.formInputs}
+                    placeholder="Enter the Number Of Hours"
+                    prefix={
+                      <ClockCircleOutlined
+                        className="site-form-item-icon"
+                        style={{ marginRight: "10px" }}
+                      />
+                    }
+                  />
+                </Form.Item>
+                {!viewMode && (
                   <Button
-                    style={{ color: "green", borderColor: "green" }}
+                    style={{ marginLeft: "50px" }}
+                    size="large"
                     htmlType="submit"
-                    disabled={!validatedHours}
-                    loading={loadingAddUser}
+                    loading={loadingValidate}
+                    disabled={validatedHours}
+                    onClick={() => {
+                      setAddingUserToTeam(false);
+                    }}
                   >
-                    Confirm
+                    Validate Hours
                   </Button>
-                ) : (
-                  <Tooltip
-                    title={"Hours need to be verified to enable creation"}
-                  >
-                    <Button
-                      style={{ color: "green", borderColor: "green" }}
-                      htmlType="submit"
-                      disabled={!validatedHours}
-                      loading={loadingAddUser}
-                    >
-                      Confirm
-                    </Button>
-                  </Tooltip>
                 )}
               </div>
-            </Form.Item>
-          </Form>
-        </div>
+              {!viewMode && (
+                <Form.Item>
+                  <div className={styles.btnContainer}>
+                    <Button
+                      style={{ color: "red", borderColor: "red" }}
+                      onClick={() => {
+                        navigate("/Invoices");
+                      }}
+                    >
+                      Back
+                    </Button>
+                    <Tooltip
+                      title={`${
+                        validatedHours
+                          ? "Hours have been sucessfully validated, Submission is now possible"
+                          : "Hours need to be verified to enable creation"
+                      }`}
+                    >
+                      <Button
+                        style={{ color: "green", borderColor: "green" }}
+                        htmlType="submit"
+                        disabled={!validatedHours}
+                        loading={loadingAddUser}
+                      >
+                        Confirm
+                      </Button>
+                    </Tooltip>
+                  </div>
+                </Form.Item>
+              )}
+            </Form>
+            {viewMode &&
+              (user.role === "Team_Lead" || user.role === "Management") && (
+                <Form
+                  form={remarksForm}
+                  layout="vertical"
+                  className={styles.formContainer}
+                  initialValues={{
+                    remember: true,
+                  }}
+                >
+                  <Form.Item name="remarks">
+                    <Input
+                      className={styles.formInputs}
+                      placeholder="Remarks/Comments"
+                      disabled={
+                        loadingStatus.APPROVE ||
+                        loadingStatus.NEED_CLARIFICATION ||
+                        loadingStatus.REJECT
+                      }
+                      prefix={
+                        <KeyOutlined
+                          className="site-form-item-icon"
+                          style={{ marginRight: "10px" }}
+                        />
+                      }
+                    />
+                  </Form.Item>
+                  <Form.Item>
+                    <div className={styles.btnContainer}>
+                      <Button
+                        style={{ color: "red", borderColor: "red" }}
+                        onClick={() => {
+                          navigate("/Invoices");
+                        }}
+                        disabled={
+                          loadingStatus.APPROVE ||
+                          loadingStatus.NEED_CLARIFICATION ||
+                          loadingStatus.REJECT
+                        }
+                      >
+                        Back
+                      </Button>
+                      <div>
+                        <Button
+                          style={{ color: "green", borderColor: "green" }}
+                          disabled={
+                            loadingStatus.APPROVE ||
+                            loadingStatus.NEED_CLARIFICATION ||
+                            loadingStatus.REJECT
+                          }
+                          onClick={() => {
+                            updateStatus("NEED_CLARIFICATION");
+                          }}
+                          loading={loadingStatus.NEED_CLARIFICATION}
+                        >
+                          Needs Calrification
+                        </Button>{" "}
+                        <Button
+                          style={{ color: "red", borderColor: "red" }}
+                          onClick={() => {
+                            updateStatus("REJECT");
+                          }}
+                          disabled={
+                            loadingStatus.APPROVE ||
+                            loadingStatus.NEED_CLARIFICATION ||
+                            loadingStatus.REJECT
+                          }
+                          loading={loadingStatus.REJECT}
+                        >
+                          Reject
+                        </Button>{" "}
+                        <Button
+                          style={{ color: "green", borderColor: "green" }}
+                          htmlType="submit"
+                          onClick={() => {
+                            updateStatus("APPROVE");
+                          }}
+                          disabled={
+                            loadingStatus.APPROVE ||
+                            loadingStatus.NEED_CLARIFICATION ||
+                            loadingStatus.REJECT
+                          }
+                          loading={loadingStatus.APPROVE}
+                        >
+                          Approve
+                        </Button>
+                      </div>
+                    </div>
+                  </Form.Item>
+                </Form>
+              )}
+          </div>
+        )}
       </div>
     </Layout>
   );

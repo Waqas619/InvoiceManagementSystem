@@ -16,7 +16,6 @@ export const getAllTeams = async () => {
 export const getTeamsByTeamID = async (teamId, onSucess, onError) => {
   return request(`teams/${teamId}`, "get", null, false)
     .then(async ({ data }) => {
-      console.log("Selected Team", data);
       onSucess(data);
     })
     .catch(function (error) {

@@ -5,7 +5,6 @@ export const getItem = (key) => {
 };
 
 export const setItem = (key, data) => {
-  console.log("INSIDE SET ITEM", data);
   return localStorage.setItem(key, JSON.stringify(data));
 };
 

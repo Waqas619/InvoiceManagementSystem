@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../../componenets/Layout";
 import { Card, Button, Skeleton } from "antd";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import styles from "./index.module.css";
 import Table from "../../componenets/Table";
 import { getAllInvoices } from "../../services/invoices.services";
 import moment from "moment";
-
+import { getItem } from "../../utils/storage";
 const Invoices = () => {
+  const user = getItem("user");
+
   const navigate = useNavigate();
-  const location = useLocation();
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -25,22 +26,26 @@ const Invoices = () => {
         endDate: moment(item.billingEndTime).format("MMMM Do YYYY"),
         Action: {
           name: "View Details",
+          Id: item.invoiceId,
           handleClick: (id) => {
-            console.log("ID", id);
+            handleDetails(id);
           },
         },
       };
     });
-    console.log("Checking Temp", temp);
     setLoading(false);
     setTableData(temp);
+  };
+
+  const handleDetails = (id) => {
+    if (typeof id === "number") {
+      navigate(`/InvoiceDetails?id=${id}`);
+    }
   };
 
   const loadData = async () => {
     setLoading(true);
     const data = await getAllInvoices();
-    console.log("Checking response", data);
-    debugger;
     generateTableData(data);
   };
 
@@ -55,19 +60,23 @@ const Invoices = () => {
           bordered
           title="Invoice Management"
           extra={
-            <Button
-              onClick={() => {
-                navigate("/AddInvoice");
-              }}
-              key="sider-menuitem-delete"
-              style={{
-                marginRight: "20px",
-                marginLeft: "auto",
-                marginBottom: "10px",
-              }}
-            >
-              Add Invoice
-            </Button>
+            <>
+              {user.role === "Partner" && (
+                <Button
+                  onClick={() => {
+                    navigate("/AddInvoice");
+                  }}
+                  key="sider-menuitem-delete"
+                  style={{
+                    marginRight: "20px",
+                    marginLeft: "auto",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Add Invoice
+                </Button>
+              )}
+            </>
           }
         >
           {loading ? (

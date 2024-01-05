@@ -56,7 +56,6 @@ function DataTable(props) {
       return <span>{props.value.toString().toUpperCase()}</span>;
     } else {
       if (props.column.colId === "Action") {
-        console.log(props.value.handleClick(props.value));
         return (
           <div
             style={{
@@ -71,6 +70,7 @@ function DataTable(props) {
           >
             <CustomButton
               onClick={() => {
+                debugger;
                 props.value.handleClick(props.value.Id);
               }}
               text={props.value.name.toString().toUpperCase()}

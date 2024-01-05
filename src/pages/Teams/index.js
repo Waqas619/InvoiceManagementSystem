@@ -28,7 +28,6 @@ const Teams = () => {
         },
       };
     });
-    console.log("Checking Temp", temp);
     setLoading(false);
     setTableData(temp);
   };

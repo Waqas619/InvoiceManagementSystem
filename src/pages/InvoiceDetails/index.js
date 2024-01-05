@@ -11,6 +11,7 @@ import {
   Select,
   Tooltip,
   Skeleton,
+  Modal,
 } from "antd";
 import {
   UserOutlined,
@@ -40,6 +41,7 @@ const InvoiceDetails = () => {
   const [form] = Form.useForm();
   const [remarksForm] = Form.useForm();
   const user = getItem("user");
+  const [modal, contextHolder] = Modal.useModal();
 
   const [loadingData, setLoadingData] = useState(false);
   const [addUserToTeam, setAddingUserToTeam] = useState(false);
@@ -68,13 +70,27 @@ const InvoiceDetails = () => {
       const queryParams = new URLSearchParams(location.search);
       const invoiceId = queryParams.get("id");
       if (invoiceId) {
-        await updateInvoice(invoiceId, invoiceForm);
+        await updateInvoice(
+          invoiceId,
+          invoiceForm,
+          () => {
+            setLoadingAddUser(false);
+            setAddingUserToTeam(false);
+            navigate("/invoices");
+          },
+          () => {}
+        );
       } else {
-        await createInvoice(invoiceForm);
+        await createInvoice(
+          invoiceForm,
+          () => {
+            setLoadingAddUser(false);
+            setAddingUserToTeam(false);
+            navigate("/invoices");
+          },
+          () => {}
+        );
       }
-      setLoadingAddUser(false);
-      setAddingUserToTeam(false);
-      navigate("/invoices");
     } else {
       setLoadingValidate(true);
       const request = {
@@ -83,45 +99,73 @@ const InvoiceDetails = () => {
         billingEndDate: DateFormater(values.billingEndTime),
         totalHours: values.numberOfHours,
       };
-      const data = await validateJiraHours(request);
-      setLoadingValidate(false);
-      if (data === true) {
-        setValidatedHours(true);
-      }
+      await validateJiraHours(
+        request,
+        (data) => {
+          setLoadingValidate(false);
+          if (data === true) {
+            setValidatedHours(true);
+            modal.success({
+              title: "Validation Passed",
+              content: "You can now submit your invoice for approval",
+              centered: true,
+            });
+          } else {
+            modal.error({
+              title: "Validation Failed",
+              content: "Please check the input data and try again",
+              centered: true,
+            });
+          }
+        },
+        () => {
+          modal.error({
+            title: "Something went wrong! Please try again later",
+            centered: true,
+          });
+        }
+      );
     }
   };
 
   const loadDetails = async () => {
-    const projectData = await getAllProjects();
-    setProjects(projectData);
+    await getAllProjects((projectData) => {
+      setProjects(projectData);
+    });
     if (window.location.pathname.includes("/InvoiceDetails")) {
       const queryParams = new URLSearchParams(location.search);
       const invoiceId = queryParams.get("id");
-
       if (invoiceId) {
         setLoadingData(true);
-        const data = await getInvoiceByInvoiceId(invoiceId);
-        form.setFieldsValue({
-          ["invoiceName"]: data?.invoiceName,
-          ["vendorName"]: data?.vendorName,
-          ["summary"]: data?.summary,
-          // ["billingStartTime"]: new Date(data?.billingStartTime),
-          // ["billingEndTime"]: new Date(data?.billingEndTime),
-          ["projectId"]: data?.projectId,
-          ["billingAmount"]: data?.billingAmount,
-          ["jiraTimesheetUrl"]: data?.jiraTimesheetUrl,
-          ["teamId"]: data?.teamId,
-          ["numberOfHours"]: data?.numberOfHours,
-        });
-        setLoadingData(false);
-        if (
-          user.role === "Partner" &&
-          (data.status === "REJECT" || data.status === "NEED_CLARIFICATION")
-        ) {
-          setViewMode(false);
-        } else {
-          setViewMode(true);
-        }
+        await getInvoiceByInvoiceId(
+          invoiceId,
+          (data) => {
+            form.setFieldsValue({
+              ["invoiceName"]: data?.invoiceName,
+              ["vendorName"]: data?.vendorName,
+              ["summary"]: data?.summary,
+              // ["billingStartTime"]: new Date(data?.billingStartTime),
+              // ["billingEndTime"]: new Date(data?.billingEndTime),
+              ["projectId"]: data?.projectId,
+              ["billingAmount"]: data?.billingAmount,
+              ["jiraTimesheetUrl"]: data?.jiraTimesheetUrl,
+              ["teamId"]: data?.teamId,
+              ["numberOfHours"]: data?.numberOfHours,
+            });
+            setLoadingData(false);
+            if (
+              user.role === "Partner" &&
+              (data.status === "REJECT" || data.status === "NEED_CLARIFICATION")
+            ) {
+              setViewMode(false);
+            } else {
+              setViewMode(true);
+            }
+          },
+          () => {
+            //Error Case HERE
+          }
+        );
       }
     }
   };
@@ -130,8 +174,13 @@ const InvoiceDetails = () => {
     setLoadingDelete(true);
     const queryParams = new URLSearchParams(location.search);
     const invoiceId = queryParams.get("id");
-    const data = await deleteInvoice(invoiceId);
-    navigate("/invoices");
+    await deleteInvoice(
+      invoiceId,
+      () => {
+        navigate("/invoices");
+      },
+      () => {}
+    );
   };
 
   const updateStatus = async (data) => {
@@ -139,16 +188,25 @@ const InvoiceDetails = () => {
     const remarks = remarksForm.getFieldValue(["remarks"]);
     const queryParams = new URLSearchParams(location.search);
     const invoiceId = queryParams.get("id");
-    const temp = await updateInvoiceStatus(invoiceId, data, {
-      remarks: remarks,
-    });
-    navigate("/Invoices");
+    updateInvoiceStatus(
+      invoiceId,
+      data,
+      {
+        remarks: remarks,
+      },
+      () => {
+        navigate("/Invoices");
+      },
+      () => {}
+    );
   };
   useEffect(() => {
     loadDetails();
   }, []);
   return (
     <Layout>
+      {contextHolder}
+
       <div className={styles.container}>
         <Card
           className={styles.cardContainer}

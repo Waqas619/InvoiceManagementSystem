@@ -1,5 +1,5 @@
-import React from "react";
-import { Col, Row, Button, Form, Input, Avatar } from "antd";
+import React, { useState } from "react";
+import { Col, Row, Button, Form, Input, Avatar, Modal } from "antd";
 import {
   DesktopOutlined,
   InteractionOutlined,
@@ -8,21 +8,33 @@ import {
 import styles from "./index.module.css";
 import { loginUser } from "../../services/auth.services";
 import { useNavigate } from "react-router-dom";
-
 const Login = () => {
   const nav = useNavigate();
+  const [modal, contextHolder] = Modal.useModal();
+
+  const [loadingLogin, setLoadingLogin] = useState(false);
   const onFinish = (values) => {
+    setLoadingLogin(true);
     loginUser(
       values,
       () => {
         nav("/Invoices");
       },
-      () => {}
+      () => {
+        setLoadingLogin(false);
+        modal.error({
+          title: "Login Failed",
+          content: "Please check your credentials and try again",
+          centered: true,
+        });
+      }
     );
   };
 
   return (
     <Row style={{ height: "100%" }}>
+      {contextHolder}
+
       <Col flex={5} className={styles.formCard}>
         <p className={styles.title}>Log In</p>
         <Form
@@ -33,7 +45,6 @@ const Login = () => {
           }}
           onFinish={onFinish}
           layout="vertical"
-          onFinishFailed={onFinishFailed}
           autoComplete="off"
         >
           <Form.Item
@@ -65,6 +76,7 @@ const Login = () => {
               type="primary"
               htmlType="submit"
               size="large"
+              loading={loadingLogin}
               style={{ width: "100%", background: "rgb(32,77,136)" }}
             >
               Submit

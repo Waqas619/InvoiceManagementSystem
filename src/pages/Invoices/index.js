@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../../componenets/Layout";
-import { Card, Button, Skeleton } from "antd";
+import { Card, Button, Skeleton, Modal } from "antd";
 import { useNavigate } from "react-router-dom";
 import styles from "./index.module.css";
 import Table from "../../componenets/Table";
@@ -9,6 +9,7 @@ import moment from "moment";
 import { getItem } from "../../utils/storage";
 const Invoices = () => {
   const user = getItem("user");
+  const [modal, contextHolder] = Modal.useModal();
 
   const navigate = useNavigate();
   const [tableData, setTableData] = useState([]);
@@ -45,8 +46,17 @@ const Invoices = () => {
 
   const loadData = async () => {
     setLoading(true);
-    const data = await getAllInvoices();
-    generateTableData(data);
+    await getAllInvoices(
+      (data) => {
+        generateTableData(data);
+      },
+      () => {
+        modal.error({
+          title: "Something went wrong! Please try again later",
+          centered: true,
+        });
+      }
+    );
   };
 
   useEffect(() => {
@@ -54,6 +64,7 @@ const Invoices = () => {
   }, []);
   return (
     <Layout>
+      {contextHolder}
       <div className={styles.container}>
         <Card
           className={styles.cardContainer}

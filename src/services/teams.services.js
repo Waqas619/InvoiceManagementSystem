@@ -1,15 +1,13 @@
 //import { setItem, clearStorage } from "../utils/storage";
 import { request } from "./verb.services";
 
-export const getTeams = async (onSucess, onError) => {
+export const getAllTeams = async () => {
   return request("teams", "get", null, false)
     .then(async ({ data }) => {
-      console.log("Teams List", data);
-      onSucess(data);
+      return data;
     })
     .catch(function (error) {
-      if (error.response) {
-        onError();
+      if (error.response.request.status === "401") {
       } else {
       }
     });

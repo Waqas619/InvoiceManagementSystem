@@ -29,6 +29,17 @@ function DataTable(props) {
             filter: false,
             sortable: false,
           };
+        }
+        if (col === "Projects") {
+          return {
+            field: col,
+            flex: 2,
+            width: "250px",
+            cellRenderer: CustomCellRenderer,
+            height: "200px",
+            filter: false,
+            sortable: false,
+          };
         } else {
           return {
             field: col,
@@ -75,6 +86,39 @@ function DataTable(props) {
               }}
               text={props.value.name.toString().toUpperCase()}
             />
+          </div>
+        );
+      }
+      if (props.column.colId === "Projects") {
+        console.log("props.value.data", props.value.data);
+        return (
+          <div
+            style={{
+              margin: "0px !important",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              //width: "200px",
+              height: "100%",
+              fontSize: "5px",
+            }}
+          >
+            {props.value.data.map((dt, index) => (
+              // <div
+              //   className="Projects"
+              //   style={{ backgroundColor: `hsl(${index * 40}, 70%, 80%)` }}
+              // >
+              //   {dt}
+              // </div>
+              <CustomButton
+                onClick={() => {}}
+                customStyle={{
+                  backgroundColor: `hsl(${index * 40}, 70%, 80%)`,
+                  marginRight: "3px",
+                }}
+                text={dt}
+              />
+            ))}
           </div>
         );
       } else {

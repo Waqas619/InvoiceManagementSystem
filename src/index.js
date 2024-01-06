@@ -13,7 +13,10 @@ import "sweetalert2/src/sweetalert2.scss";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 document
   .getElementById("root")
-  .setAttribute("style", "width:100%; height:100%; min-height:100vh");
+  .setAttribute(
+    "style",
+    "width:100%; height:100%; min-height:100vh;overflow-x:'hidden'"
+  );
 
 root.render(
   <BrowserRouter>
@@ -22,6 +25,7 @@ root.render(
       <Route path="/Invoices" element={<Invoices />}></Route>
       <Route path="/Teams" element={<Teams />}></Route>
       <Route path="/TeamDetails" element={<TeamDetails />}></Route>
+      <Route path="/AddTeam" element={<TeamDetails />}></Route>
       {/* Invoices Routes */}
       <Route path="/Invoices" element={<Invoices />}></Route>
       <Route path="/InvoiceDetails" element={<InvoiceDetails />}></Route>

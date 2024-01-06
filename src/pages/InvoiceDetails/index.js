@@ -163,6 +163,7 @@ const InvoiceDetails = () => {
             }
           },
           () => {
+            setLoadingData(false);
             //Error Case HERE
           }
         );

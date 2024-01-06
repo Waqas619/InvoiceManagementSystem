@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../../componenets/Layout";
-import { Card, Button, Skeleton } from "antd";
+import { Card, Button, Skeleton, Modal } from "antd";
 
 import Table from "../../componenets/Table";
 import styles from "./index.module.css";
@@ -8,9 +8,10 @@ import { useNavigate } from "react-router-dom";
 import { getAllTeams } from "../../services/teams.services";
 
 const Teams = () => {
-  const nav = useNavigate();
+  const navigate = useNavigate();
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [modal, contextHolder] = Modal.useModal();
 
   const generateTableData = (data) => {
     const temp = data.map((item) => {
@@ -23,7 +24,7 @@ const Teams = () => {
           name: "View Details",
           Id: item.teamId,
           handleClick: (id) => {
-            console.log("ID", id);
+            handleDetails(id);
           },
         },
       };
@@ -32,11 +33,25 @@ const Teams = () => {
     setTableData(temp);
   };
 
+  const handleDetails = (id) => {
+    if (typeof id === "number") {
+      navigate(`/TeamDetails?id=${id}`);
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
-    const data = await getAllTeams();
-    console.log("Checking response", data);
-    generateTableData(data);
+    await getAllTeams(
+      (data) => {
+        generateTableData(data);
+      },
+      () => {
+        modal.error({
+          title: "Something went wrong! Please try again later",
+          centered: true,
+        });
+      }
+    );
   };
 
   useEffect(() => {
@@ -45,6 +60,7 @@ const Teams = () => {
 
   return (
     <Layout>
+      {contextHolder}
       <div className={styles.container}>
         <Card
           className={styles.cardContainer}
@@ -53,7 +69,7 @@ const Teams = () => {
           extra={
             <Button
               onClick={() => {
-                nav("/TeamDetails");
+                navigate("/TeamDetails");
               }}
               key="sider-menuitem-delete"
               style={{

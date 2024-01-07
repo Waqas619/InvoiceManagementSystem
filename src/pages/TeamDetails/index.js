@@ -23,10 +23,14 @@ const TeamDetails = () => {
   const [loadingData, setLoadingData] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [teamsData, setTeamsData] = useState();
   const [loadingAddTeam, setLoadingAddTeam] = useState(false);
   const [tableData, setTableData] = useState([]);
   const [modal, contextHolder] = Modal.useModal();
   const [resourceModal, setResourceModal] = useState(false);
+  const [selectedResourceId, setSelectedResourceId] = useState(0);
+  const [modalMode, setModalMode] = useState("");
+
   const handleDelete = async () => {
     setLoadingDelete(true);
     const queryParams = new URLSearchParams(location.search);
@@ -102,6 +106,7 @@ const TeamDetails = () => {
               teamIdentificationCode: data?.teamIdentificationCode,
             });
             generateTableData(data.teamMembers);
+            setTeamsData(data);
             setLoadingData(false);
           },
           (error) => {
@@ -118,8 +123,10 @@ const TeamDetails = () => {
   };
 
   const handleDetails = (id) => {
-    console.log("id", id);
+    console.log("tid", id);
+    setSelectedResourceId(id);
     setResourceModal(true);
+    setModalMode("Edit");
   };
 
   const filterProjectNames = (projectsList) => {
@@ -159,14 +166,44 @@ const TeamDetails = () => {
   const closeResourceModalStatus = () => {
     setResourceModal(false);
   };
+  const removeResource = () => {
+    setResourceModal(false);
+  };
 
+  const addResource = () => {
+    setResourceModal(false);
+  };
+
+  const updateResource = () => {
+    setResourceModal(false);
+  };
   return (
     <Layout>
       {contextHolder}
-      <ResourcesModal
-        isOpen={resourceModal}
-        onClose={closeResourceModalStatus}
-      ></ResourcesModal>
+      {modalMode === "Add" && (
+        <ResourcesModal
+          isOpen={resourceModal}
+          onClose={closeResourceModalStatus}
+          formData={teamsData?.teamMembers[selectedResourceId]}
+          projects={projects}
+          modalType={modalMode}
+          onAddResource={() => {}}
+        ></ResourcesModal>
+      )}
+
+      {modalMode === "Edit" && (
+        <ResourcesModal
+          isOpen={resourceModal}
+          onClose={closeResourceModalStatus}
+          formData={teamsData?.teamMembers[selectedResourceId]}
+          projects={projects}
+          modalType={modalMode}
+          onRemoveResource={(id) => {
+            console.log("id", id);
+          }}
+          onUpdateResource={() => {}}
+        ></ResourcesModal>
+      )}
 
       <Card
         className={styles.cardContainer}
@@ -321,7 +358,8 @@ const TeamDetails = () => {
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <Button
                 onClick={() => {
-                  console.log("123");
+                  setModalMode("Add");
+                  setResourceModal(true);
                 }}
                 key="sider-menuitem-delete"
                 style={{

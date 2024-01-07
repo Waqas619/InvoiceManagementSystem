@@ -6,6 +6,13 @@ import "./index.css";
 import CustomButton from "../Button";
 import moment from "moment/moment";
 
+const status = {
+  APPROVE: "lightgreen",
+  SUBMITTED: "lightblue",
+  REJECT: "#ff5a5a",
+  NEED_CLARIFICATION: "orange",
+};
+
 function DataTable(props) {
   const {
     data = [],
@@ -39,6 +46,14 @@ function DataTable(props) {
             height: "200px",
             filter: false,
             sortable: false,
+          };
+        }
+        if (col === "Status") {
+          return {
+            field: col,
+            width: "250px",
+            cellRenderer: CustomCellRenderer,
+            height: "200px",
           };
         } else {
           return {
@@ -103,12 +118,6 @@ function DataTable(props) {
             }}
           >
             {props.value.data.map((dt, index) => (
-              // <div
-              //   className="Projects"
-              //   style={{ backgroundColor: `hsl(${index * 40}, 70%, 80%)` }}
-              // >
-              //   {dt}
-              // </div>
               <CustomButton
                 onClick={() => {}}
                 customStyle={{
@@ -119,6 +128,21 @@ function DataTable(props) {
               />
             ))}
           </div>
+        );
+      }
+      if (props.column.colId === "Status") {
+        return (
+          <span
+            style={{
+              backgroundColor: `${status[props.value]}`,
+              fontWeight: "bold",
+              padding: "5px",
+              border: "1px solid transparent",
+              borderRadius: "6px",
+            }}
+          >
+            {props.value}
+          </span>
         );
       } else {
         return <span>{props.value}</span>;

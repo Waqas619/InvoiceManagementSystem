@@ -27,6 +27,7 @@ import styles from "./index.module.css";
 import {
   createInvoice,
   deleteInvoice,
+  downloadInvoice,
   getInvoiceByInvoiceId,
   updateInvoice,
   updateInvoiceStatus,
@@ -53,6 +54,8 @@ const InvoiceDetails = () => {
   const [viewMode, setViewMode] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
   const [file, setFile] = useState([]);
+  const [attachmentAvailable, setAttachmentAvailable] = useState(false);
+  const [invoiceId, setInvoiceId] = useState();
   const [loadingStatus, setLoadingStatus] = useState({
     APPROVE: false,
     NEED_CLARIFICATION: false,
@@ -136,6 +139,7 @@ const InvoiceDetails = () => {
     if (window.location.pathname.includes("/InvoiceDetails")) {
       const queryParams = new URLSearchParams(location.search);
       const invoiceId = queryParams.get("id");
+      setInvoiceId(invoiceId);
       if (invoiceId) {
         setLoadingData(true);
         await getInvoiceByInvoiceId(
@@ -153,6 +157,9 @@ const InvoiceDetails = () => {
               ["teamId"]: data?.teamId,
               ["numberOfHours"]: data?.numberOfHours,
             });
+            if (data?.attachment.length > 0) {
+              setAttachmentAvailable(true);
+            }
             setLoadingData(false);
             if (
               user.role === "Partner" &&
@@ -481,11 +488,37 @@ const InvoiceDetails = () => {
                   }
                 />
               </Form.Item>
-              <FileUploader
-                confirmFile={(data) => {
-                  handleFileConfirm(data);
+              <div
+                style={{
+                  background: "white",
+                  border: "1px solid white",
+                  borderRadius: "6px",
+                  padding: "10px",
+                  paddingTop: "5px",
+                  marginBottom: "20px",
                 }}
-              />
+              >
+                <p style={{ fontSize: "14px" }}>Attachments</p>
+                {!viewMode ? (
+                  <FileUploader
+                    confirmFile={(data) => {
+                      handleFileConfirm(data);
+                    }}
+                  />
+                ) : (
+                  <>
+                    {attachmentAvailable ? (
+                      <NavLink
+                        to={`http://localhost:8080/api/invoices/getAttachment/${invoiceId}`}
+                      >
+                        Download Attachment
+                      </NavLink>
+                    ) : (
+                      <p>No file has been attached with this invoice</p>
+                    )}
+                  </>
+                )}
+              </div>
 
               <div
                 style={{

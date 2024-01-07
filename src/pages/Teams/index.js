@@ -20,7 +20,6 @@ const Teams = () => {
         teamName: item.teamName,
         teamIdentificationCode: item.teamIdentificationCode,
         numberOfResources: item.numberOfResources,
-        isActive: true,
         Action: {
           name: "View Details",
           Id: item.teamId,

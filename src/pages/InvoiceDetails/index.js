@@ -27,6 +27,7 @@ import styles from "./index.module.css";
 import {
   createInvoice,
   deleteInvoice,
+  downloadInvoice,
   getInvoiceByInvoiceId,
   updateInvoice,
   updateInvoiceStatus,
@@ -34,6 +35,7 @@ import {
 } from "../../services/invoices.services";
 import { DateFormater } from "../../utils/helperFunctions";
 import { useLocation, useNavigate } from "react-router-dom";
+import FileUploader from "../../componenets/FileUploader";
 
 const InvoiceDetails = () => {
   const location = useLocation();
@@ -50,6 +52,9 @@ const InvoiceDetails = () => {
   const [projects, setProjects] = useState([]);
   const [viewMode, setViewMode] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [file, setFile] = useState([]);
+  const [attachmentAvailable, setAttachmentAvailable] = useState(false);
+  const [invoiceId, setInvoiceId] = useState();
   const [loadingStatus, setLoadingStatus] = useState({
     APPROVE: false,
     NEED_CLARIFICATION: false,
@@ -59,13 +64,11 @@ const InvoiceDetails = () => {
   const onFinishAddUser = async (values) => {
     if (validatedHours) {
       setLoadingAddUser(true);
-      const formData = new FormData();
-      const temp = Object.keys(values);
-      temp.forEach((item) => {
-        formData.append(`${item}`, values[item]);
-      });
       const invoiceForm = new FormData();
       invoiceForm.append("invoice", JSON.stringify(values));
+      if (file.length > 0) {
+        invoiceForm.append("attachment", file[0]);
+      }
       const queryParams = new URLSearchParams(location.search);
       const invoiceId = queryParams.get("id");
       if (invoiceId) {
@@ -132,6 +135,7 @@ const InvoiceDetails = () => {
     if (window.location.pathname.includes("/InvoiceDetails")) {
       const queryParams = new URLSearchParams(location.search);
       const invoiceId = queryParams.get("id");
+      setInvoiceId(invoiceId);
       if (invoiceId) {
         setLoadingData(true);
         await getInvoiceByInvoiceId(
@@ -149,6 +153,9 @@ const InvoiceDetails = () => {
               teamId: data?.teamId,
               numberOfHours: data?.numberOfHours,
             });
+            if (data?.attachment.length > 0) {
+              setAttachmentAvailable(true);
+            }
             setLoadingData(false);
             if (
               user.role === "Partner" &&
@@ -179,6 +186,10 @@ const InvoiceDetails = () => {
       },
       () => {}
     );
+  };
+
+  const handleFileConfirm = (fileData) => {
+    setFile(fileData);
   };
 
   const updateStatus = async (data) => {
@@ -474,6 +485,38 @@ const InvoiceDetails = () => {
                   }
                 />
               </Form.Item>
+              <div
+                style={{
+                  background: "white",
+                  border: "1px solid white",
+                  borderRadius: "6px",
+                  padding: "10px",
+                  paddingTop: "5px",
+                  marginBottom: "20px",
+                }}
+              >
+                <p style={{ fontSize: "14px" }}>Attachments</p>
+                {!viewMode ? (
+                  <FileUploader
+                    confirmFile={(data) => {
+                      handleFileConfirm(data);
+                    }}
+                  />
+                ) : (
+                  <>
+                    {attachmentAvailable ? (
+                      <NavLink
+                        to={`http://localhost:8080/api/invoices/getAttachment/${invoiceId}`}
+                      >
+                        Download Attachment
+                      </NavLink>
+                    ) : (
+                      <p>No file has been attached with this invoice</p>
+                    )}
+                  </>
+                )}
+              </div>
+
               <div
                 style={{
                   display: "flex",

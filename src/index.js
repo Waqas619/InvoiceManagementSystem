@@ -8,7 +8,8 @@ import Invoices from "./pages/Invoices";
 import Teams from "./pages/Teams";
 import TeamDetails from "./pages/TeamDetails";
 import InvoiceDetails from "./pages/InvoiceDetails";
-import "sweetalert2/src/sweetalert2.scss";
+import AddInvoice from "./pages/AddInvoice";
+import EditInvoice from "./pages/EditInvoice";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 document
@@ -29,7 +30,8 @@ root.render(
       {/* Invoices Routes */}
       <Route path="/Invoices" element={<Invoices />}></Route>
       <Route path="/InvoiceDetails" element={<InvoiceDetails />}></Route>
-      <Route path="/AddInvoice" element={<InvoiceDetails />}></Route>
+      <Route path="/AddInvoice" element={<AddInvoice />}></Route>
+      <Route path="/EditInvoice" element={<EditInvoice />}></Route>
     </Routes>
   </BrowserRouter>
 );

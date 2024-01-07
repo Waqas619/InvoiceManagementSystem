@@ -96,7 +96,7 @@ function DataTable(props) {
           >
             <CustomButton
               onClick={() => {
-                props.value.handleClick(props.value.Id);
+                props.value.handleClick(props.value.Id, props.value?.status);
               }}
               text={props.value.name.toString().toUpperCase()}
             />

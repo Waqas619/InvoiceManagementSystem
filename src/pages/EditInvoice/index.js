@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../../componenets/Layout";
-import { getItem } from "../../utils/storage";
 import {
   Card,
   Button,
@@ -9,6 +8,7 @@ import {
   Breadcrumb,
   DatePicker,
   Select,
+  Tooltip,
   Skeleton,
   Modal,
 } from "antd";
@@ -18,34 +18,103 @@ import {
   IeOutlined,
   ClockCircleOutlined,
   DollarOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import { NavLink } from "react-router-dom";
+import { getAllProjects } from "../../services/projects.services";
 import styles from "./index.module.css";
 import {
+  deleteInvoice,
   getInvoiceByInvoiceId,
-  updateInvoiceStatus,
+  updateInvoice,
+  validateJiraHours,
 } from "../../services/invoices.services";
+import { DateFormater } from "../../utils/helperFunctions";
 import { useLocation, useNavigate } from "react-router-dom";
+import FileUploader from "../../componenets/FileUploader";
+import moment from "moment";
 
-const InvoiceDetails = () => {
+const EditInvoice = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [remarksForm] = Form.useForm();
-  const user = getItem("user");
   const [modal, contextHolder] = Modal.useModal();
-
   const [loadingData, setLoadingData] = useState(false);
-
+  const [loadingAddUser, setLoadingAddUser] = useState(false);
+  const [loadingValidate, setLoadingValidate] = useState(false);
+  const [validatedHours, setValidatedHours] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+  const [file, setFile] = useState([]);
   const [attachmentAvailable, setAttachmentAvailable] = useState(false);
   const [invoiceId, setInvoiceId] = useState();
-  const [loadingStatus, setLoadingStatus] = useState({
-    APPROVE: false,
-    NEED_CLARIFICATION: false,
-    REJECT: false,
-  });
+
+  const onFinishAddUser = async (values) => {
+    if (validatedHours) {
+      setLoadingAddUser(true);
+      const invoiceForm = new FormData();
+      invoiceForm.append("invoice", JSON.stringify(values));
+      if (file.length > 0) {
+        invoiceForm.append("attachment", file[0]);
+      }
+      const queryParams = new URLSearchParams(location.search);
+      const invoiceId = queryParams.get("id");
+      await updateInvoice(
+        invoiceId,
+        invoiceForm,
+        () => {
+          setLoadingAddUser(false);
+          navigate("/invoices");
+        },
+        () => {
+          setLoadingAddUser(false);
+          modal.error({
+            title: "Something went wrong! Please try again later",
+            centered: true,
+          });
+        }
+      );
+    } else {
+      setLoadingValidate(true);
+      const request = {
+        teamId: values.teamId,
+        billingStartDate: DateFormater(values.billingStartTime),
+        billingEndDate: DateFormater(values.billingEndTime),
+        totalHours: values.numberOfHours,
+      };
+      await validateJiraHours(
+        request,
+        (data) => {
+          setLoadingValidate(false);
+          if (data === true) {
+            setValidatedHours(true);
+            modal.success({
+              title: "Validation Passed",
+              content: "You can now submit your invoice for approval",
+              centered: true,
+            });
+          } else {
+            modal.error({
+              title: "Validation Failed",
+              content: "Please check the input data and try again",
+              centered: true,
+            });
+          }
+        },
+        () => {
+          modal.error({
+            title: "Something went wrong! Please try again later",
+            centered: true,
+          });
+        }
+      );
+    }
+  };
 
   const loadDetails = async () => {
+    await getAllProjects((projectData) => {
+      setProjects(projectData);
+    });
     const queryParams = new URLSearchParams(location.search);
     const invoiceId = queryParams.get("id");
     setInvoiceId(invoiceId);
@@ -54,18 +123,18 @@ const InvoiceDetails = () => {
       await getInvoiceByInvoiceId(
         invoiceId,
         (data) => {
+          console.log("Date", new Date(data?.billingStartTime));
           form.setFieldsValue({
             invoiceName: data?.invoiceName,
             vendorName: data?.vendorName,
             summary: data?.summary,
-            billingStartTime: data?.billingStartTime,
-            billingEndTime: data?.billingEndTime,
+            billingStartTime: moment(data?.billingStartTime, "YYYY-MM-DD"),
+            billingEndTime: moment(data?.billingEndTime, "YYYY-MM-DD"),
             projectId: data?.projectId,
             billingAmount: data?.billingAmount,
             jiraTimesheetUrl: data?.jiraTimesheetUrl,
             teamId: data?.teamId,
             numberOfHours: data?.numberOfHours,
-            remarks: data?.remarks,
           });
           if (data?.attachment.length > 0) {
             setAttachmentAvailable(true);
@@ -80,23 +149,23 @@ const InvoiceDetails = () => {
     }
   };
 
-  const updateStatus = async (data) => {
-    setLoadingStatus({ ...loadingStatus, [data]: true });
-    const remarks = remarksForm.getFieldValue(["remarks"]);
+  const handleDelete = async () => {
+    setLoadingDelete(true);
     const queryParams = new URLSearchParams(location.search);
     const invoiceId = queryParams.get("id");
-    updateInvoiceStatus(
+    await deleteInvoice(
       invoiceId,
-      data,
-      {
-        remarks: remarks,
-      },
       () => {
-        navigate("/Invoices");
+        navigate("/invoices");
       },
       () => {}
     );
   };
+
+  const handleFileConfirm = (fileData) => {
+    setFile(fileData);
+  };
+
   useEffect(() => {
     loadDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,7 +178,21 @@ const InvoiceDetails = () => {
         <Card
           className={styles.cardContainer}
           bordered
-          title={`Invoice Details`}
+          title={`Edit Invoice`}
+          extra={[
+            <>
+              <Button
+                style={{ color: "red", borderColor: "red" }}
+                loading={loadingDelete}
+                onClick={() => {
+                  handleDelete();
+                }}
+              >
+                <DeleteOutlined />
+                Delete Invoice
+              </Button>
+            </>,
+          ]}
         >
           <Breadcrumb
             items={[
@@ -122,7 +205,7 @@ const InvoiceDetails = () => {
               },
 
               {
-                title: "Invoice Details",
+                title: `Edit Invoice`,
               },
             ]}
           />
@@ -143,6 +226,7 @@ const InvoiceDetails = () => {
               initialValues={{
                 remember: true,
               }}
+              onFinish={onFinishAddUser}
             >
               <div
                 style={{
@@ -163,7 +247,7 @@ const InvoiceDetails = () => {
                   ]}
                 >
                   <Input
-                    disabled={true}
+                    disabled={loadingAddUser}
                     className={styles.formInputs}
                     placeholder="Enter Invoice Name"
                     prefix={
@@ -186,7 +270,7 @@ const InvoiceDetails = () => {
                   ]}
                 >
                   <Input
-                    disabled={true}
+                    disabled={loadingAddUser}
                     className={styles.formInputs}
                     placeholder="Enter the vendor name"
                     prefix={
@@ -209,7 +293,7 @@ const InvoiceDetails = () => {
                 ]}
               >
                 <Input
-                  disabled={true}
+                  disabled={loadingAddUser}
                   className={styles.formInputs}
                   placeholder="Enter Summary Of The Invoice"
                   prefix={
@@ -237,15 +321,11 @@ const InvoiceDetails = () => {
                     },
                   ]}
                 >
-                  {invoiceId ? (
-                    <Input disabled={true} className={styles.formInputs} />
-                  ) : (
-                    <DatePicker
-                      disabled={true}
-                      placeholder="Enter the start date"
-                      size="large"
-                    />
-                  )}
+                  <DatePicker
+                    disabled={validatedHours}
+                    placeholder="Enter the start date"
+                    size="large"
+                  />
                 </Form.Item>
                 <Form.Item
                   name="billingEndTime"
@@ -258,15 +338,11 @@ const InvoiceDetails = () => {
                     },
                   ]}
                 >
-                  {invoiceId ? (
-                    <Input disabled={true} className={styles.formInputs} />
-                  ) : (
-                    <DatePicker
-                      disabled={true}
-                      placeholder="Enter the end date"
-                      size="large"
-                    />
-                  )}
+                  <DatePicker
+                    disabled={validatedHours}
+                    placeholder="Enter the end date"
+                    size="large"
+                  />
                 </Form.Item>
                 <Form.Item
                   label="Project"
@@ -279,7 +355,13 @@ const InvoiceDetails = () => {
                     },
                   ]}
                 >
-                  <Select size="large" disabled={true}></Select>
+                  <Select size="large" disabled={loadingAddUser}>
+                    {projects.map((item) => (
+                      <Select.Option value={item.projectID}>
+                        {item.projectName}
+                      </Select.Option>
+                    ))}
+                  </Select>
                 </Form.Item>
                 <Form.Item
                   label="Billing Amount"
@@ -293,7 +375,7 @@ const InvoiceDetails = () => {
                   ]}
                 >
                   <Input
-                    disabled={true}
+                    disabled={loadingAddUser}
                     className={styles.formInputs}
                     size="large"
                     placeholder="Enter Billing Amount"
@@ -317,7 +399,7 @@ const InvoiceDetails = () => {
                 ]}
               >
                 <Input
-                  disabled={true}
+                  disabled={loadingAddUser}
                   className={styles.formInputs}
                   placeholder="Enter the Jira Timesheet Url"
                   prefix={
@@ -338,7 +420,7 @@ const InvoiceDetails = () => {
                 ]}
               >
                 <Input
-                  disabled={true}
+                  disabled={validatedHours}
                   className={styles.formInputs}
                   placeholder="Enter the Team Id"
                   prefix={
@@ -361,149 +443,106 @@ const InvoiceDetails = () => {
               >
                 <p style={{ fontSize: "14px" }}>Attachments</p>
 
-                <>
-                  {attachmentAvailable ? (
+                {attachmentAvailable ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
                     <NavLink
                       to={`http://localhost:8080/api/invoices/getAttachment/${invoiceId}`}
                     >
                       Download Attachment
                     </NavLink>
-                  ) : (
-                    <p>No file has been attached with this invoice</p>
-                  )}
-                </>
+                    <Button
+                      style={{ color: "red", borderColor: "red" }}
+                      onClick={() => {
+                        setAttachmentAvailable(false);
+                      }}
+                    >
+                      Delete Attachment
+                    </Button>
+                  </div>
+                ) : (
+                  <FileUploader
+                    confirmFile={(data) => {
+                      handleFileConfirm(data);
+                    }}
+                  />
+                )}
               </div>
 
-              <Form.Item
-                name="numberOfHours"
-                style={{ width: "100%" }}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input the Number Of Hours!",
-                  },
-                ]}
-              >
-                <Input
-                  disabled={true}
-                  className={styles.formInputs}
-                  placeholder="Enter the Number Of Hours"
-                  prefix={
-                    <ClockCircleOutlined
-                      className="site-form-item-icon"
-                      style={{ marginRight: "10px" }}
-                    />
-                  }
-                />
-              </Form.Item>
-              <Form.Item
-                name="remarks"
-                label="Remarks"
-                style={{ width: "100%" }}
-              >
-                <Input disabled={true} className={styles.formInputs} />
-              </Form.Item>
-            </Form>
-            {(user.role === "Team_Lead" || user.role === "Management") && (
-              <Form
-                form={remarksForm}
-                layout="vertical"
-                className={styles.formContainer}
-                initialValues={{
-                  remember: true,
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
                 }}
               >
                 <Form.Item
-                  name="remarks"
-                  label="Add Remarks"
+                  name="numberOfHours"
+                  style={{ width: "100%" }}
                   rules={[
                     {
                       required: true,
-                      message:
-                        "Please enter your remarks before updating the status!",
+                      message: "Please input the Number Of Hours!",
                     },
                   ]}
                 >
                   <Input
+                    disabled={validatedHours}
                     className={styles.formInputs}
-                    placeholder="Remarks/Comments"
-                    disabled={
-                      loadingStatus.APPROVE ||
-                      loadingStatus.NEED_CLARIFICATION ||
-                      loadingStatus.REJECT
-                    }
+                    placeholder="Enter the Number Of Hours"
                     prefix={
-                      <KeyOutlined
+                      <ClockCircleOutlined
                         className="site-form-item-icon"
                         style={{ marginRight: "10px" }}
                       />
                     }
                   />
                 </Form.Item>
-                <Form.Item>
-                  <div className={styles.btnContainer}>
+                <Button
+                  style={{ marginLeft: "50px" }}
+                  size="large"
+                  htmlType="submit"
+                  loading={loadingValidate}
+                  disabled={validatedHours}
+                >
+                  Validate Hours
+                </Button>
+              </div>
+              <Form.Item>
+                <div className={styles.btnContainer}>
+                  <Button
+                    style={{ color: "red", borderColor: "red" }}
+                    onClick={() => {
+                      navigate("/Invoices");
+                    }}
+                  >
+                    Back
+                  </Button>
+                  <Tooltip
+                    title={`${
+                      validatedHours
+                        ? "Hours have been sucessfully validated, Submission is now possible"
+                        : "Hours need to be verified to enable creation"
+                    }`}
+                  >
                     <Button
-                      style={{ color: "red", borderColor: "red" }}
-                      onClick={() => {
-                        navigate("/Invoices");
-                      }}
-                      disabled={
-                        loadingStatus.APPROVE ||
-                        loadingStatus.NEED_CLARIFICATION ||
-                        loadingStatus.REJECT
-                      }
+                      style={{ color: "green", borderColor: "green" }}
+                      htmlType="submit"
+                      disabled={!validatedHours}
+                      loading={loadingAddUser}
                     >
-                      Back
+                      Confirm
                     </Button>
-                    <div>
-                      <Button
-                        style={{ color: "green", borderColor: "green" }}
-                        disabled={
-                          loadingStatus.APPROVE ||
-                          loadingStatus.NEED_CLARIFICATION ||
-                          loadingStatus.REJECT
-                        }
-                        onClick={() => {
-                          updateStatus("NEED_CLARIFICATION");
-                        }}
-                        loading={loadingStatus.NEED_CLARIFICATION}
-                      >
-                        Needs Calrification
-                      </Button>{" "}
-                      <Button
-                        style={{ color: "red", borderColor: "red" }}
-                        onClick={() => {
-                          updateStatus("REJECT");
-                        }}
-                        disabled={
-                          loadingStatus.APPROVE ||
-                          loadingStatus.NEED_CLARIFICATION ||
-                          loadingStatus.REJECT
-                        }
-                        loading={loadingStatus.REJECT}
-                      >
-                        Reject
-                      </Button>{" "}
-                      <Button
-                        style={{ color: "green", borderColor: "green" }}
-                        htmlType="submit"
-                        onClick={() => {
-                          updateStatus("APPROVE");
-                        }}
-                        disabled={
-                          loadingStatus.APPROVE ||
-                          loadingStatus.NEED_CLARIFICATION ||
-                          loadingStatus.REJECT
-                        }
-                        loading={loadingStatus.APPROVE}
-                      >
-                        Approve
-                      </Button>
-                    </div>
-                  </div>
-                </Form.Item>
-              </Form>
-            )}
+                  </Tooltip>
+                </div>
+              </Form.Item>
+            </Form>
           </div>
         )}
       </div>
@@ -511,4 +550,4 @@ const InvoiceDetails = () => {
   );
 };
 
-export default InvoiceDetails;
+export default EditInvoice;

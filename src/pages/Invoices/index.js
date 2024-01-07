@@ -28,6 +28,7 @@ const Invoices = () => {
         Action: {
           name: "View Details",
           Id: item.invoiceId,
+          status: item.status,
           handleClick: (id) => {
             handleDetails(id);
           },

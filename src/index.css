@@ -19,3 +19,7 @@ code {
 .ant-collapse {
   border-color: transparent;
 }
+
+.ant-modal-title {
+  text-align: center !important;
+}

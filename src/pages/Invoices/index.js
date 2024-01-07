@@ -22,7 +22,7 @@ const Invoices = () => {
         Name: item.invoiceName,
         vendorName: item.vendorName,
         Project: item.projectName,
-        status: item.status,
+        Status: item.status,
         startDate: moment(item.billingStartTime).format("MMMM Do YYYY"),
         endDate: moment(item.billingEndTime).format("MMMM Do YYYY"),
         Action: {

@@ -21,5 +21,9 @@ code {
 }
 
 .ant-modal-title {
-  text-align: center !important;
+  text-align: center;
+}
+
+.ant-modal-content {
+  padding: 10px 24px 10px 24px !important;
 }

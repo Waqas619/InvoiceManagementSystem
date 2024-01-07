@@ -11,6 +11,7 @@ import {
   getTeamsByTeamID,
   addTeam,
   updateTeam,
+  getTeamsDepartments,
 } from "../../services/teams.services";
 import { getAllProjects } from "../../services/projects.services";
 import { useNavigate } from "react-router-dom/dist";
@@ -23,6 +24,7 @@ const TeamDetails = () => {
   const [loadingData, setLoadingData] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [teamMemberDepartments, setTeamMemberDepartments] = useState([]);
   const [teamsData, setTeamsData] = useState();
   const [loadingAddTeam, setLoadingAddTeam] = useState(false);
   const [tableData, setTableData] = useState([]);
@@ -90,6 +92,12 @@ const TeamDetails = () => {
     await getAllProjects(
       (projectData) => {
         setProjects(projectData);
+      },
+      () => {}
+    );
+    await getTeamsDepartments(
+      (teamsData) => {
+        setTeamMemberDepartments(teamsData);
       },
       () => {}
     );
@@ -186,6 +194,7 @@ const TeamDetails = () => {
           onClose={closeResourceModalStatus}
           formData={teamsData?.teamMembers[selectedResourceId]}
           projects={projects}
+          teamMemberDepartments={teamMemberDepartments}
           modalType={modalMode}
           onAddResource={() => {}}
         ></ResourcesModal>
@@ -197,6 +206,7 @@ const TeamDetails = () => {
           onClose={closeResourceModalStatus}
           formData={teamsData?.teamMembers[selectedResourceId]}
           projects={projects}
+          teamMemberDepartments={teamMemberDepartments}
           modalType={modalMode}
           onRemoveResource={(id) => {
             console.log("id", id);

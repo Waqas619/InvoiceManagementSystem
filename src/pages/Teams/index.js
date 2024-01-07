@@ -69,7 +69,7 @@ const Teams = () => {
           extra={
             <Button
               onClick={() => {
-                navigate("/TeamDetails");
+                navigate("/AddTeam");
               }}
               key="sider-menuitem-delete"
               style={{

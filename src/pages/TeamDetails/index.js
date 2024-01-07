@@ -6,9 +6,15 @@ import styles from "./index.module.css";
 import { NavLink } from "react-router-dom";
 import { UserOutlined, MailOutlined, DeleteOutlined } from "@ant-design/icons";
 import Table from "../../componenets/Table";
-import { deleteTeam, getTeamsByTeamID } from "../../services/teams.services";
+import {
+  deleteTeam,
+  getTeamsByTeamID,
+  addTeam,
+  updateTeam,
+} from "../../services/teams.services";
 import { getAllProjects } from "../../services/projects.services";
 import { useNavigate } from "react-router-dom/dist";
+import ResourcesModal from "../../componenets/ResourcesModal";
 
 const TeamDetails = () => {
   const location = useLocation();
@@ -20,7 +26,7 @@ const TeamDetails = () => {
   const [loadingAddTeam, setLoadingAddTeam] = useState(false);
   const [tableData, setTableData] = useState([]);
   const [modal, contextHolder] = Modal.useModal();
-
+  const [resourceModal, setResourceModal] = useState(false);
   const handleDelete = async () => {
     setLoadingDelete(true);
     const queryParams = new URLSearchParams(location.search);
@@ -28,87 +34,60 @@ const TeamDetails = () => {
     await deleteTeam(
       invoiceId,
       () => {
+        setLoadingDelete(false);
         navigate("/Teams");
       },
-      () => {}
+      () => {
+        setLoadingDelete(false);
+      }
     );
   };
 
   const onFinishAddTeam = async (values) => {
-    // if (validatedHours) {
-    //   setLoadingAddUser(true);
-    //   const formData = new FormData();
-    //   const temp = Object.keys(values);
-    //   temp.map((item) => {
-    //     formData.append(`${item}`, values[item]);
-    //   });
-    //   const invoiceForm = new FormData();
-    //   invoiceForm.append("invoice", JSON.stringify(values));
-    //   const queryParams = new URLSearchParams(location.search);
-    //   const invoiceId = queryParams.get("id");
-    //   if (invoiceId) {
-    //     await updateInvoice(
-    //       invoiceId,
-    //       invoiceForm,
-    //       () => {
-    //         setLoadingAddUser(false);
-    //         setAddingUserToTeam(false);
-    //         navigate("/invoices");
-    //       },
-    //       () => {}
-    //     );
-    //   } else {
-    //     await createInvoice(
-    //       invoiceForm,
-    //       () => {
-    //         setLoadingAddUser(false);
-    //         setAddingUserToTeam(false);
-    //         navigate("/invoices");
-    //       },
-    //       () => {}
-    //     );
-    //   }
-    // } else {
-    //   setLoadingValidate(true);
-    //   const request = {
-    //     teamId: values.teamId,
-    //     billingStartDate: DateFormater(values.billingStartTime),
-    //     billingEndDate: DateFormater(values.billingEndTime),
-    //     totalHours: values.numberOfHours,
-    //   };
-    //   await validateJiraHours(
-    //     request,
-    //     (data) => {
-    //       setLoadingValidate(false);
-    //       if (data === true) {
-    //         setValidatedHours(true);
-    //         modal.success({
-    //           title: "Validation Passed",
-    //           content: "You can now submit your invoice for approval",
-    //           centered: true,
-    //         });
-    //       } else {
-    //         modal.error({
-    //           title: "Validation Failed",
-    //           content: "Please check the input data and try again",
-    //           centered: true,
-    //         });
-    //       }
-    //     },
-    //     () => {
-    //       modal.error({
-    //         title: "Something went wrong! Please try again later",
-    //         centered: true,
-    //       });
-    //     }
-    //   );
-    // }
+    setLoadingAddTeam(true);
+    const queryParams = new URLSearchParams(location.search);
+    const teamId = queryParams.get("id");
+    console.log("teams", values);
+    let body = {
+      teamName: values.teamName,
+      teamId: teamId || null,
+      teamIdentificationCode: values.teamIdentificationCode,
+      numberOfResources: 0,
+      teamMembers: [],
+    };
+    if (teamId) {
+      await updateTeam(
+        teamId,
+        body,
+        () => {
+          setLoadingAddTeam(false);
+          navigate("/teams");
+        },
+        () => {
+          setLoadingAddTeam(false);
+        }
+      );
+    } else {
+      await addTeam(
+        body,
+        () => {
+          setLoadingAddTeam(false);
+          navigate("/teams");
+        },
+        () => {
+          setLoadingAddTeam(false);
+        }
+      );
+    }
   };
 
   const loadDetails = async () => {
-    await getAllProjects((projectData) => {
-      setProjects(projectData);
-    });
+    await getAllProjects(
+      (projectData) => {
+        setProjects(projectData);
+      },
+      () => {}
+    );
     if (window.location.pathname.includes("/TeamDetails")) {
       const queryParams = new URLSearchParams(location.search);
       const teamId = queryParams.get("id");
@@ -138,9 +117,8 @@ const TeamDetails = () => {
   };
 
   const handleDetails = (id) => {
-    if (typeof id === "number") {
-      navigate(`/TeamDetails?id=${id}`);
-    }
+    console.log("id", id);
+    setResourceModal(true);
   };
 
   const filterProjectNames = (projectsList) => {
@@ -157,14 +135,13 @@ const TeamDetails = () => {
         ID: index + 1,
         teamMemberName: item.teamMemberName,
         teamMemberDepartment: item.teamMemberDepartment,
-        //   projects: filterProjectNames(item.projects),
         Projects: {
           name: "Projects",
           data: filterProjectNames(item.projects),
         },
         Action: {
-          name: "View Details",
-          Id: item.teamId,
+          name: "Modify Resource",
+          Id: index,
           handleClick: (id) => {
             handleDetails(id);
           },
@@ -178,9 +155,18 @@ const TeamDetails = () => {
     loadDetails();
   }, []);
 
+  const closeResourceModalStatus = () => {
+    setResourceModal(false);
+  };
+
   return (
     <Layout>
       {contextHolder}
+      <ResourcesModal
+        isOpen={resourceModal}
+        onClose={closeResourceModalStatus}
+      ></ResourcesModal>
+
       <Card
         className={styles.cardContainer}
         bordered
@@ -302,7 +288,11 @@ const TeamDetails = () => {
                   Cancel
                 </Button>
                 <Button
-                  style={{ color: "green", borderColor: "green" }}
+                  style={{
+                    color: "green",
+                    borderColor: "green",
+                    marginRight: "20px",
+                  }}
                   htmlType="submit"
                   loading={loadingAddTeam}
                 >
@@ -312,6 +302,21 @@ const TeamDetails = () => {
             </Form.Item>
           </Form>
           <Card className={styles.cardContainer}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                fontSize: "24px",
+                fontWeight: "bold",
+                marginBottom: "40px",
+                color: "#333",
+                textTransform: "uppercase",
+                letterSpacing: "2px",
+                textShadow: "2px 2px 4px rgba(0, 0, 0, 0.2)",
+              }}
+            >
+              Resource List
+            </div>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <Button
                 onClick={() => {
@@ -325,7 +330,7 @@ const TeamDetails = () => {
                 Add Resource
               </Button>
             </div>
-            {tableData.length > 0 && <Table data={tableData} />}
+            <Table data={tableData} />
           </Card>
         </div>
       )}

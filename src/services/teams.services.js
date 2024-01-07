@@ -31,3 +31,23 @@ export const deleteTeam = (id, onSucess, onError) => {
       onError(error);
     });
 };
+
+export const addTeam = async (body, onSucess, onError) => {
+  return request(`teams`, "post", body, false)
+    .then(async ({ data }) => {
+      onSucess(data);
+    })
+    .catch(function (error) {
+      onError(error);
+    });
+};
+
+export const updateTeam = async (id, body, onSucess, onError) => {
+  return request(`teams/${id}`, "get", body, false)
+    .then(async ({ data }) => {
+      onSucess(data);
+    })
+    .catch(function (error) {
+      onError(error);
+    });
+};

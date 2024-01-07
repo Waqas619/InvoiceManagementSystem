@@ -44,7 +44,6 @@ const InvoiceDetails = () => {
   const [modal, contextHolder] = Modal.useModal();
 
   const [loadingData, setLoadingData] = useState(false);
-  const [addUserToTeam, setAddingUserToTeam] = useState(false);
   const [loadingAddUser, setLoadingAddUser] = useState(false);
   const [loadingValidate, setLoadingValidate] = useState(false);
   const [validatedHours, setValidatedHours] = useState(false);
@@ -62,7 +61,7 @@ const InvoiceDetails = () => {
       setLoadingAddUser(true);
       const formData = new FormData();
       const temp = Object.keys(values);
-      temp.map((item) => {
+      temp.forEach((item) => {
         formData.append(`${item}`, values[item]);
       });
       const invoiceForm = new FormData();
@@ -75,7 +74,6 @@ const InvoiceDetails = () => {
           invoiceForm,
           () => {
             setLoadingAddUser(false);
-            setAddingUserToTeam(false);
             navigate("/invoices");
           },
           () => {}
@@ -85,7 +83,6 @@ const InvoiceDetails = () => {
           invoiceForm,
           () => {
             setLoadingAddUser(false);
-            setAddingUserToTeam(false);
             navigate("/invoices");
           },
           () => {}
@@ -141,16 +138,16 @@ const InvoiceDetails = () => {
           invoiceId,
           (data) => {
             form.setFieldsValue({
-              ["invoiceName"]: data?.invoiceName,
-              ["vendorName"]: data?.vendorName,
-              ["summary"]: data?.summary,
+              invoiceName: data?.invoiceName,
+              vendorName: data?.vendorName,
+              summary: data?.summary,
               // ["billingStartTime"]: new Date(data?.billingStartTime),
               // ["billingEndTime"]: new Date(data?.billingEndTime),
-              ["projectId"]: data?.projectId,
-              ["billingAmount"]: data?.billingAmount,
-              ["jiraTimesheetUrl"]: data?.jiraTimesheetUrl,
-              ["teamId"]: data?.teamId,
-              ["numberOfHours"]: data?.numberOfHours,
+              projectId: data?.projectId,
+              billingAmount: data?.billingAmount,
+              jiraTimesheetUrl: data?.jiraTimesheetUrl,
+              teamId: data?.teamId,
+              numberOfHours: data?.numberOfHours,
             });
             setLoadingData(false);
             if (
@@ -203,6 +200,7 @@ const InvoiceDetails = () => {
   };
   useEffect(() => {
     loadDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
     <Layout>
@@ -512,9 +510,6 @@ const InvoiceDetails = () => {
                     htmlType="submit"
                     loading={loadingValidate}
                     disabled={validatedHours}
-                    onClick={() => {
-                      setAddingUserToTeam(false);
-                    }}
                   >
                     Validate Hours
                   </Button>

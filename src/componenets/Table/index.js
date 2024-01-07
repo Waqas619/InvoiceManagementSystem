@@ -81,7 +81,6 @@ function DataTable(props) {
           >
             <CustomButton
               onClick={() => {
-                debugger;
                 props.value.handleClick(props.value.Id);
               }}
               text={props.value.name.toString().toUpperCase()}
@@ -116,7 +115,7 @@ function DataTable(props) {
                   backgroundColor: `hsl(${index * 40}, 70%, 80%)`,
                   marginRight: "3px",
                 }}
-                text={dt}
+                text={dt.toString().toUpperCase()}
               />
             ))}
           </div>
@@ -127,11 +126,11 @@ function DataTable(props) {
     }
   };
 
-  const defaultColDef = useMemo(() => ({
+  const defaultColDef = {
     sortable: true,
     resizable: true,
     filter: true,
-  }));
+  };
 
   return (
     <div style={{ height: "350px" }}>
@@ -151,7 +150,7 @@ function DataTable(props) {
         ref={gridRef}
         className="ag-theme-alpine"
         animateRows="true"
-        columnDefs={getColumns(data[0])}
+        columnDefs={getColumns(data.length > 0 ? data[0] : [])}
         defaultColDef={defaultColDef}
         gridOptions={{ suppressRowClickSelection: true }}
         enableRangeSelection="true"

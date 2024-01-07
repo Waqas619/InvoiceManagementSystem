@@ -65,6 +65,7 @@ const InvoiceDetails = () => {
             jiraTimesheetUrl: data?.jiraTimesheetUrl,
             teamId: data?.teamId,
             numberOfHours: data?.numberOfHours,
+            remarks: data?.remarks,
           });
           if (data?.attachment.length > 0) {
             setAttachmentAvailable(true);
@@ -373,36 +374,35 @@ const InvoiceDetails = () => {
                 </>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
+              <Form.Item
+                name="numberOfHours"
+                style={{ width: "100%" }}
+                rules={[
+                  {
+                    required: true,
+                    message: "Please input the Number Of Hours!",
+                  },
+                ]}
               >
-                <Form.Item
-                  name="numberOfHours"
-                  style={{ width: "100%" }}
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please input the Number Of Hours!",
-                    },
-                  ]}
-                >
-                  <Input
-                    disabled={true}
-                    className={styles.formInputs}
-                    placeholder="Enter the Number Of Hours"
-                    prefix={
-                      <ClockCircleOutlined
-                        className="site-form-item-icon"
-                        style={{ marginRight: "10px" }}
-                      />
-                    }
-                  />
-                </Form.Item>
-              </div>
+                <Input
+                  disabled={true}
+                  className={styles.formInputs}
+                  placeholder="Enter the Number Of Hours"
+                  prefix={
+                    <ClockCircleOutlined
+                      className="site-form-item-icon"
+                      style={{ marginRight: "10px" }}
+                    />
+                  }
+                />
+              </Form.Item>
+              <Form.Item
+                name="remarks"
+                label="Remarks"
+                style={{ width: "100%" }}
+              >
+                <Input disabled={true} className={styles.formInputs} />
+              </Form.Item>
             </Form>
             {(user.role === "Team_Lead" || user.role === "Management") && (
               <Form
@@ -413,7 +413,17 @@ const InvoiceDetails = () => {
                   remember: true,
                 }}
               >
-                <Form.Item name="remarks">
+                <Form.Item
+                  name="remarks"
+                  label="Add Remarks"
+                  rules={[
+                    {
+                      required: true,
+                      message:
+                        "Please enter your remarks before updating the status!",
+                    },
+                  ]}
+                >
                   <Input
                     className={styles.formInputs}
                     placeholder="Remarks/Comments"

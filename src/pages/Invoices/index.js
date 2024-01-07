@@ -29,8 +29,8 @@ const Invoices = () => {
           name: "View Details",
           Id: item.invoiceId,
           status: item.status,
-          handleClick: (id) => {
-            handleDetails(id);
+          handleClick: (id, status) => {
+            handleDetails(id, status);
           },
         },
       };
@@ -39,8 +39,15 @@ const Invoices = () => {
     setTableData(temp);
   };
 
-  const handleDetails = (id) => {
-    if (typeof id === "number") {
+  const handleDetails = (id, status) => {
+    const user = getItem("user");
+
+    if (
+      user.role === "Partner" &&
+      (status === "NEED_CLARIFICATION" || status === "REJECT")
+    ) {
+      navigate(`/EditInvoice?id=${id}`);
+    } else {
       navigate(`/InvoiceDetails?id=${id}`);
     }
   };

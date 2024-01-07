@@ -32,6 +32,7 @@ import {
 import { DateFormater } from "../../utils/helperFunctions";
 import { useLocation, useNavigate } from "react-router-dom";
 import FileUploader from "../../componenets/FileUploader";
+import moment from "moment";
 
 const EditInvoice = () => {
   const location = useLocation();
@@ -122,12 +123,13 @@ const EditInvoice = () => {
       await getInvoiceByInvoiceId(
         invoiceId,
         (data) => {
+          console.log("Date", new Date(data?.billingStartTime));
           form.setFieldsValue({
             invoiceName: data?.invoiceName,
             vendorName: data?.vendorName,
             summary: data?.summary,
-            billingStartTime: data?.billingStartTime,
-            billingEndTime: data?.billingEndTime,
+            billingStartTime: moment(data?.billingStartTime, "YYYY-MM-DD"),
+            billingEndTime: moment(data?.billingEndTime, "YYYY-MM-DD"),
             projectId: data?.projectId,
             billingAmount: data?.billingAmount,
             jiraTimesheetUrl: data?.jiraTimesheetUrl,
@@ -440,22 +442,37 @@ const EditInvoice = () => {
                 }}
               >
                 <p style={{ fontSize: "14px" }}>Attachments</p>
-                <FileUploader
-                  confirmFile={(data) => {
-                    handleFileConfirm(data);
-                  }}
-                />
-                <>
-                  {attachmentAvailable ? (
+
+                {attachmentAvailable ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
                     <NavLink
                       to={`http://localhost:8080/api/invoices/getAttachment/${invoiceId}`}
                     >
                       Download Attachment
                     </NavLink>
-                  ) : (
-                    <p>No file has been attached with this invoice</p>
-                  )}
-                </>
+                    <Button
+                      style={{ color: "red", borderColor: "red" }}
+                      onClick={() => {
+                        setAttachmentAvailable(false);
+                      }}
+                    >
+                      Delete Attachment
+                    </Button>
+                  </div>
+                ) : (
+                  <FileUploader
+                    confirmFile={(data) => {
+                      handleFileConfirm(data);
+                    }}
+                  />
+                )}
               </div>
 
               <div

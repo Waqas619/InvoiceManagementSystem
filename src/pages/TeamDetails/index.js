@@ -53,6 +53,7 @@ const TeamDetails = () => {
       teamId: teamId || null,
       teamIdentificationCode: values.teamIdentificationCode,
       numberOfResources: 0,
+      isActive: true,
       teamMembers: [],
     };
     if (teamId) {

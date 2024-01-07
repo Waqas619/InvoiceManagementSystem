@@ -79,7 +79,13 @@ const InvoiceDetails = () => {
             setLoadingAddUser(false);
             navigate("/invoices");
           },
-          () => {}
+          () => {
+            setLoadingAddUser(false);
+            modal.error({
+              title: "Something went wrong! Please try again later",
+              centered: true,
+            });
+          }
         );
       } else {
         await createInvoice(
@@ -88,7 +94,13 @@ const InvoiceDetails = () => {
             setLoadingAddUser(false);
             navigate("/invoices");
           },
-          () => {}
+          () => {
+            setLoadingAddUser(false);
+            modal.error({
+              title: "Something went wrong! Please try again later",
+              centered: true,
+            });
+          }
         );
       }
     } else {
@@ -145,8 +157,8 @@ const InvoiceDetails = () => {
               invoiceName: data?.invoiceName,
               vendorName: data?.vendorName,
               summary: data?.summary,
-              // ["billingStartTime"]: new Date(data?.billingStartTime),
-              // ["billingEndTime"]: new Date(data?.billingEndTime),
+              billingStartTime: data?.billingStartTime,
+              billingEndTime: data?.billingEndTime,
               projectId: data?.projectId,
               billingAmount: data?.billingAmount,
               jiraTimesheetUrl: data?.jiraTimesheetUrl,
@@ -375,11 +387,18 @@ const InvoiceDetails = () => {
                     },
                   ]}
                 >
-                  <DatePicker
-                    disabled={validatedHours || viewMode}
-                    placeholder="Enter the start date"
-                    size="large"
-                  />
+                  {viewMode || invoiceId ? (
+                    <Input
+                      disabled={loadingAddUser || viewMode}
+                      className={styles.formInputs}
+                    />
+                  ) : (
+                    <DatePicker
+                      disabled={validatedHours || viewMode}
+                      placeholder="Enter the start date"
+                      size="large"
+                    />
+                  )}
                 </Form.Item>
                 <Form.Item
                   name="billingEndTime"
@@ -392,11 +411,18 @@ const InvoiceDetails = () => {
                     },
                   ]}
                 >
-                  <DatePicker
-                    disabled={validatedHours || viewMode}
-                    placeholder="Enter the end date"
-                    size="large"
-                  />
+                  {viewMode || invoiceId ? (
+                    <Input
+                      disabled={loadingAddUser || viewMode}
+                      className={styles.formInputs}
+                    />
+                  ) : (
+                    <DatePicker
+                      disabled={validatedHours || viewMode}
+                      placeholder="Enter the end date"
+                      size="large"
+                    />
+                  )}
                 </Form.Item>
                 <Form.Item
                   label="Project"

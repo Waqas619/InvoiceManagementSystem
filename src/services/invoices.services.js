@@ -39,15 +39,13 @@ export const validateJiraHours = (body, onSucess, onError) => {
     });
 };
 
-export const createInvoice = (body) => {
+export const createInvoice = (body, onSuccess, onError) => {
   return request("invoices", "post", body, true)
     .then(async ({ data }) => {
-      return data;
+      onSuccess(data);
     })
     .catch(function (error) {
-      if (error.response.request.status == "401") {
-      } else {
-      }
+      onError(error);
     });
 };
 

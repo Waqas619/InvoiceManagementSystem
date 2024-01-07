@@ -22,7 +22,7 @@ const Invoices = () => {
         Name: item.invoiceName,
         vendorName: item.vendorName,
         Project: item.projectName,
-        amount: item.billingAmount,
+        status: item.status,
         startDate: moment(item.billingStartTime).format("MMMM Do YYYY"),
         endDate: moment(item.billingEndTime).format("MMMM Do YYYY"),
         Action: {
@@ -97,7 +97,7 @@ const Invoices = () => {
               <Skeleton />
             </>
           ) : (
-            <>{tableData.length > 1 && <Table data={tableData} />}</>
+            <Table data={tableData} />
           )}
         </Card>
       </div>

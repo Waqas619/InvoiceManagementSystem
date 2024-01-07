@@ -34,6 +34,7 @@ import {
 } from "../../services/invoices.services";
 import { DateFormater } from "../../utils/helperFunctions";
 import { useLocation, useNavigate } from "react-router-dom";
+import FileUploader from "../../componenets/FileUploader";
 
 const InvoiceDetails = () => {
   const location = useLocation();
@@ -51,6 +52,7 @@ const InvoiceDetails = () => {
   const [projects, setProjects] = useState([]);
   const [viewMode, setViewMode] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [file, setFile] = useState([]);
   const [loadingStatus, setLoadingStatus] = useState({
     APPROVE: false,
     NEED_CLARIFICATION: false,
@@ -60,13 +62,12 @@ const InvoiceDetails = () => {
   const onFinishAddUser = async (values) => {
     if (validatedHours) {
       setLoadingAddUser(true);
-      const formData = new FormData();
-      const temp = Object.keys(values);
-      temp.map((item) => {
-        formData.append(`${item}`, values[item]);
-      });
+
       const invoiceForm = new FormData();
       invoiceForm.append("invoice", JSON.stringify(values));
+      if (file.length > 0) {
+        invoiceForm.append("attachment", file[0]);
+      }
       const queryParams = new URLSearchParams(location.search);
       const invoiceId = queryParams.get("id");
       if (invoiceId) {
@@ -182,6 +183,10 @@ const InvoiceDetails = () => {
       },
       () => {}
     );
+  };
+
+  const handleFileConfirm = (fileData) => {
+    setFile(fileData);
   };
 
   const updateStatus = async (data) => {
@@ -476,6 +481,12 @@ const InvoiceDetails = () => {
                   }
                 />
               </Form.Item>
+              <FileUploader
+                confirmFile={(data) => {
+                  handleFileConfirm(data);
+                }}
+              />
+
               <div
                 style={{
                   display: "flex",

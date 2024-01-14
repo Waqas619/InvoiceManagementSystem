@@ -14,6 +14,7 @@ import {
   getTeamsDepartments,
 } from "../../services/teams.services";
 import { getAllProjects } from "../../services/projects.services";
+import { getAllUsers } from "../../services/users.services";
 import { useNavigate } from "react-router-dom/dist";
 import ResourcesModal from "../../componenets/ResourcesModal";
 
@@ -32,6 +33,7 @@ const TeamDetails = () => {
   const [resourceModal, setResourceModal] = useState(false);
   const [selectedResourceId, setSelectedResourceId] = useState(0);
   const [modalMode, setModalMode] = useState("");
+  const [userList, setUserList] = useState([]);
 
   const handleDelete = async () => {
     setLoadingDelete(true);
@@ -93,13 +95,37 @@ const TeamDetails = () => {
       (projectData) => {
         setProjects(projectData);
       },
-      () => {}
+      (error) => {
+        console.log("error", error);
+        modal.error({
+          title: "Something went wrong! Unable to Fetch Projects.",
+          centered: true,
+        });
+      }
     );
     await getTeamsDepartments(
       (teamsData) => {
         setTeamMemberDepartments(teamsData);
       },
-      () => {}
+      (error) => {
+        console.log("error", error);
+        modal.error({
+          title: "Something went wrong! Unable to Fetch Team Departments.",
+          centered: true,
+        });
+      }
+    );
+    await getAllUsers(
+      (userData) => {
+        setUserList(userData);
+      },
+      (error) => {
+        console.log("error", error);
+        modal.error({
+          title: "Something went wrong! Unable to Fetch Users List.",
+          centered: true,
+        });
+      }
     );
     if (window.location.pathname.includes("/TeamDetails")) {
       const queryParams = new URLSearchParams(location.search);
@@ -188,33 +214,20 @@ const TeamDetails = () => {
   return (
     <Layout>
       {contextHolder}
-      {modalMode === "Add" && (
-        <ResourcesModal
-          isOpen={resourceModal}
-          onClose={closeResourceModalStatus}
-          formData={teamsData?.teamMembers[selectedResourceId]}
-          projects={projects}
-          teamMemberDepartments={teamMemberDepartments}
-          modalType={modalMode}
-          onAddResource={() => {}}
-        ></ResourcesModal>
-      )}
-
-      {modalMode === "Edit" && (
-        <ResourcesModal
-          isOpen={resourceModal}
-          onClose={closeResourceModalStatus}
-          formData={teamsData?.teamMembers[selectedResourceId]}
-          projects={projects}
-          teamMemberDepartments={teamMemberDepartments}
-          modalType={modalMode}
-          onRemoveResource={(id) => {
-            console.log("id", id);
-          }}
-          onUpdateResource={() => {}}
-        ></ResourcesModal>
-      )}
-
+      <ResourcesModal
+        isOpen={resourceModal}
+        onClose={closeResourceModalStatus}
+        formData={teamsData?.teamMembers[selectedResourceId]}
+        projects={projects}
+        userList={userList}
+        teamMemberDepartments={teamMemberDepartments}
+        modalType={modalMode}
+        onAddResource={() => {}}
+        onRemoveResource={(id) => {
+          console.log("id", id);
+        }}
+        onUpdateResource={() => {}}
+      ></ResourcesModal>
       <Card
         className={styles.cardContainer}
         bordered

@@ -77,7 +77,7 @@ const ResourcesModal = (props) => {
           <Form
             form={form}
             layout="vertical"
-            name="normal_login"
+            name="resource_manage"
             className={styles.formContainer}
             initialValues={{
               remember: true,
@@ -95,9 +95,19 @@ const ResourcesModal = (props) => {
                 },
               ]}
             >
-              <Select size="large" placeholder="Select Resource">
+              <Select
+                showSearch
+                size="large"
+                placeholder="Select Resource"
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >=
+                  0
+                }
+              >
                 {userList.map((item) => (
-                  <Select.Option value={item}>{item}</Select.Option>
+                  <Select.Option value={item.jiraUserAccountId}>
+                    {item.jiraUserAccountName}
+                  </Select.Option>
                 ))}
               </Select>
             </Form.Item>

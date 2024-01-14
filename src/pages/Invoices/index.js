@@ -59,6 +59,7 @@ const Invoices = () => {
         generateTableData(data);
       },
       () => {
+        setLoading(false);
         modal.error({
           title: "Something went wrong! Please try again later",
           centered: true,

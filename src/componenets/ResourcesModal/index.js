@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Modal, Form, Input } from "antd";
+import { Button, Modal, Form, Input, Select } from "antd";
 import { UserOutlined, MailOutlined } from "@ant-design/icons";
 import styles from "./ResourcesModal.module.css";
 const ResourcesModal = (props) => {
@@ -8,6 +8,16 @@ const ResourcesModal = (props) => {
     isOpen = false,
     onClose = () => {},
     projects = [],
+    userList = [
+      "Waqas Siddiqui",
+      "Bisma Nawaz",
+      "Muhammad Tehmas Azeem",
+      "Moiz Ahmed",
+      "Naseer Uddin",
+      "Mirza Sawleh Baig",
+    ],
+    teamId = null,
+    teamMemberDepartments = [],
     formData = {},
     modalType = "Add",
     onAddResource = () => {},
@@ -21,16 +31,38 @@ const ResourcesModal = (props) => {
     setOpen(isOpen);
   }, [isOpen]);
 
-  const handleOk = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setOpen(false);
-    }, 3000);
+  useEffect(() => {
+    if (modalType === "Edit") {
+      console.log("formData", formData);
+      form.setFieldsValue({
+        teamMemberName: formData.teamMemberName,
+        teamMemberDepartment: formData.teamMemberDepartment,
+        projectId: formData.projects.map((project) => project.projectID),
+      });
+    }
+  }, [modalType, isOpen]);
+
+  const handleOk = (values) => {
+    // setLoading(true);
+    // setTimeout(() => {
+    //   setLoading(false);
+    //   setOpen(false);
+    // }, 3000);
+    console.log(values);
+    resetFormValues();
   };
   const handleCancel = () => {
     onClose();
     setOpen(false);
+    resetFormValues();
+  };
+
+  const resetFormValues = () => {
+    form.setFieldsValue({
+      teamMemberName: "",
+      teamMemberDepartment: "",
+      projectId: [],
+    });
   };
   return (
     <>
@@ -45,7 +77,7 @@ const ResourcesModal = (props) => {
           <Form
             form={form}
             layout="vertical"
-            name="normal_login"
+            name="resource_manage"
             className={styles.formContainer}
             initialValues={{
               remember: true,
@@ -53,72 +85,72 @@ const ResourcesModal = (props) => {
             onFinish={handleOk}
           >
             <Form.Item
-              name="teamName"
-              label="Team Name"
-              style={{ width: "48%" }}
+              label="Resource Name"
+              name="teamMemberName"
+              style={{ width: "80%" }}
               rules={[
                 {
                   required: true,
-                  message: "Please Input the Team Name!",
+                  message: "Please Select Resource!",
                 },
               ]}
             >
-              <Input
-                className={styles.formInputs}
-                placeholder="Enter Team Name"
-                prefix={
-                  <UserOutlined
-                    className="site-form-item-icon"
-                    style={{ marginRight: "10px" }}
-                  />
+              <Select
+                showSearch
+                size="large"
+                placeholder="Select Resource"
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >=
+                  0
                 }
-              />
+              >
+                {userList.map((item) => (
+                  <Select.Option value={item.jiraUserAccountId}>
+                    {item.jiraUserAccountName}
+                  </Select.Option>
+                ))}
+              </Select>
             </Form.Item>
             <Form.Item
-              name="teamNameDep"
-              label="Team Name"
-              style={{ width: "48%" }}
+              label="Team Member Department"
+              name="teamMemberDepartment"
+              style={{ width: "80%" }}
               rules={[
                 {
                   required: true,
-                  message: "Please Input the Team Name!",
+                  message: "Please Select Team Member Department!",
                 },
               ]}
             >
-              <Input
-                className={styles.formInputs}
-                placeholder="Enter Team Name"
-                prefix={
-                  <UserOutlined
-                    className="site-form-item-icon"
-                    style={{ marginRight: "10px" }}
-                  />
-                }
-              />
+              <Select size="large" placeholder="Select Team Member Department">
+                {teamMemberDepartments.map((item) => (
+                  <Select.Option value={item}>{item}</Select.Option>
+                ))}
+              </Select>
             </Form.Item>
             <Form.Item
-              name="teamIdentificationCode"
-              label="Team Identification Code"
-              style={{ width: "48%" }}
+              label="Project(s)"
+              name="projectId"
+              style={{ width: "80%", marginBottom: "40px" }}
               rules={[
                 {
                   required: true,
-                  message: "Please Input the Team Identification Code!",
+                  message: "Please select atleast once project!",
                 },
               ]}
             >
-              <Input
-                className={styles.formInputs}
-                placeholder="Enter Team Identification Code"
-                prefix={
-                  <MailOutlined
-                    className="site-form-item-icon"
-                    style={{ marginRight: "10px" }}
-                  />
-                }
-              />
+              <Select
+                size="large"
+                placeholder="Select Project(s)"
+                mode="multiple"
+              >
+                {projects.map((item) => (
+                  <Select.Option value={item.projectID}>
+                    {item.projectName}
+                  </Select.Option>
+                ))}
+              </Select>
             </Form.Item>
-
             <Form.Item>
               <div
                 style={{
@@ -150,7 +182,7 @@ const ResourcesModal = (props) => {
                     //  href="https://google.com"
                     type="primary"
                     loading={loading}
-                    onClick={handleOk}
+                    onClick={onRemoveResource}
                     style={{
                       background: "red",
                       borderColor: "yellow",

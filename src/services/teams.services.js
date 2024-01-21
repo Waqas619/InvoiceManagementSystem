@@ -51,3 +51,13 @@ export const updateTeam = async (id, body, onSucess, onError) => {
       onError(error);
     });
 };
+
+export const getTeamsDepartments = async (onSuccess, onError) => {
+  return request("lookup/DepartmentNames", "get", null, false)
+    .then(async ({ data }) => {
+      onSuccess(data);
+    })
+    .catch(function (error) {
+      onError(error);
+    });
+};

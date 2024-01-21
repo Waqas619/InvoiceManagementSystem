@@ -9,10 +9,7 @@ export const getAllInvoices = (onSucess, onError) => {
       return data;
     })
     .catch(function (error) {
-      if (error.response.request.status === "401") {
-      } else {
-        onError();
-      }
+      onError();
     });
 };
 
@@ -56,10 +53,7 @@ export const updateInvoiceStatus = (id, action, body, onSucess, onError) => {
       return data;
     })
     .catch(function (error) {
-      if (error.response.request.status == "401") {
-      } else {
-        onError();
-      }
+      onError();
     });
 };
 
@@ -70,10 +64,7 @@ export const deleteInvoice = (id, onSucess, onError) => {
       return data;
     })
     .catch(function (error) {
-      if (error.response.request.status == "401") {
-      } else {
-        onError();
-      }
+      onError();
     });
 };
 
@@ -84,9 +75,6 @@ export const updateInvoice = (id, body, onSucess, onError) => {
       return data;
     })
     .catch(function (error) {
-      if (error.response.request.status == "401") {
-      } else {
-        onError();
-      }
+      onError();
     });
 };

@@ -404,7 +404,9 @@ const InvoiceDetails = () => {
                 <Input disabled={true} className={styles.formInputs} />
               </Form.Item>
             </Form>
-            {(user.role === "Team_Lead" || user.role === "Management") && (
+            {(user.role === "Team_Lead" ||
+              user.role === "Product_Owner" ||
+              user.role === "Portfolio_Owner") && (
               <Form
                 form={remarksForm}
                 layout="vertical"
@@ -468,7 +470,7 @@ const InvoiceDetails = () => {
                         }}
                         loading={loadingStatus.NEED_CLARIFICATION}
                       >
-                        Needs Calrification
+                        Needs Clarification
                       </Button>{" "}
                       <Button
                         style={{ color: "red", borderColor: "red" }}

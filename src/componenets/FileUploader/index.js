@@ -73,6 +73,7 @@ const FileUploader = ({ confirmFile }) => {
         <div className={styles.btnContainer}>
           <Button
             style={{ color: "red", borderColor: "red" }}
+            disabled={filesList.length === 0}
             onClick={() => {
               setFilesList([]);
               setConfirmedFile(false);
@@ -83,7 +84,7 @@ const FileUploader = ({ confirmFile }) => {
           <Button
             style={{ color: "green", borderColor: "green" }}
             onClick={handleFileUpload}
-            disabled={confirmedFile && filesList.length > 0}
+            disabled={confirmedFile || filesList.length === 0}
           >
             Confirm File Selection
           </Button>

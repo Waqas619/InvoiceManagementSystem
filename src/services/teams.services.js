@@ -1,4 +1,3 @@
-//import { setItem, clearStorage } from "../utils/storage";
 import { request } from "./verb.services";
 
 export const getAllTeams = async (onSuccess, onError) => {
@@ -43,7 +42,7 @@ export const addTeam = async (body, onSucess, onError) => {
 };
 
 export const updateTeam = async (id, body, onSucess, onError) => {
-  return request(`teams/${id}`, "get", body, false)
+  return request(`teams/${id}`, "PUT", body, false)
     .then(async ({ data }) => {
       onSucess(data);
     })

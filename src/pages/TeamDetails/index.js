@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Card, Form, Input, Button, Modal, Breadcrumb, Skeleton } from "antd";
 import Layout from "../../componenets/Layout";
-import { useLocation } from "react-router-dom";
+import { useLocation, NavLink } from "react-router-dom";
 import styles from "./index.module.css";
-import { NavLink } from "react-router-dom";
 import { UserOutlined, MailOutlined, DeleteOutlined } from "@ant-design/icons";
 import Table from "../../componenets/Table";
 import {
@@ -43,7 +42,13 @@ const TeamDetails = () => {
       invoiceId,
       () => {
         setLoadingDelete(false);
-        navigate("/Teams");
+        modal.success({
+          title: "Team Deletion",
+          content: "Team Deleted Successfully.",
+        });
+        setTimeout(() => {
+          navigate("/Teams");
+        }, 2000);
       },
       () => {
         setLoadingDelete(false);
@@ -62,7 +67,7 @@ const TeamDetails = () => {
       teamIdentificationCode: values.teamIdentificationCode,
       numberOfResources: 0,
       isActive: true,
-      teamMembers: [],
+      teamMembers: teamsData ? teamsData.teamMembers : [],
     };
     if (teamId) {
       await updateTeam(
@@ -70,9 +75,20 @@ const TeamDetails = () => {
         body,
         () => {
           setLoadingAddTeam(false);
-          navigate("/teams");
+          modal.success({
+            title: "Team Updation",
+            content: "Team Updated Successfully.",
+          });
+          setTimeout(() => {
+            navigate("/Teams");
+          }, 2000);
         },
-        () => {
+        (error) => {
+          console.log("error", error);
+          modal.error({
+            title: "Update Team Operation Failed",
+            content: "Something Went Wrong. Please Try Again Later!",
+          });
           setLoadingAddTeam(false);
         }
       );
@@ -81,9 +97,20 @@ const TeamDetails = () => {
         body,
         () => {
           setLoadingAddTeam(false);
-          navigate("/teams");
+          modal.success({
+            title: "Team Addition",
+            content: "Team Added Successfully.",
+          });
+          setTimeout(() => {
+            navigate("/Teams");
+          }, 2000);
         },
-        () => {
+        (error) => {
+          console.log("error", error);
+          modal.error({
+            title: "Add Team Operation Failed",
+            content: "Something Went Wrong. Please Try Again Later!",
+          });
           setLoadingAddTeam(false);
         }
       );
@@ -91,42 +118,6 @@ const TeamDetails = () => {
   };
 
   const loadDetails = async () => {
-    await getAllProjects(
-      (projectData) => {
-        setProjects(projectData);
-      },
-      (error) => {
-        console.log("error", error);
-        modal.error({
-          title: "Something went wrong! Unable to Fetch Projects.",
-          centered: true,
-        });
-      }
-    );
-    await getTeamsDepartments(
-      (teamsData) => {
-        setTeamMemberDepartments(teamsData);
-      },
-      (error) => {
-        console.log("error", error);
-        modal.error({
-          title: "Something went wrong! Unable to Fetch Team Departments.",
-          centered: true,
-        });
-      }
-    );
-    await getAllUsers(
-      (userData) => {
-        setUserList(userData);
-      },
-      (error) => {
-        console.log("error", error);
-        modal.error({
-          title: "Something went wrong! Unable to Fetch Users List.",
-          centered: true,
-        });
-      }
-    );
     if (window.location.pathname.includes("/TeamDetails")) {
       const queryParams = new URLSearchParams(location.search);
       const teamId = queryParams.get("id");
@@ -147,13 +138,49 @@ const TeamDetails = () => {
             setLoadingData(false);
             console.log("getTeamsByTeamId error", error);
             modal.error({
-              title: "Something went wrong! Please try again later",
+              title: "Something Went Wrong. Please Try Again Later!",
               centered: true,
             });
           }
         );
       }
     }
+    await getAllProjects(
+      (projectData) => {
+        setProjects(projectData);
+      },
+      (error) => {
+        console.log("error", error);
+        modal.error({
+          title: "Something Went Wrong. Unable to Fetch Projects.",
+          centered: true,
+        });
+      }
+    );
+    await getTeamsDepartments(
+      (departments) => {
+        setTeamMemberDepartments(departments);
+      },
+      (error) => {
+        console.log("error", error);
+        modal.error({
+          title: "Something went Wrong. Unable to Fetch Team Departments.",
+          centered: true,
+        });
+      }
+    );
+    await getAllUsers(
+      (userData) => {
+        setUserList(userData);
+      },
+      (error) => {
+        console.log("error", error);
+        modal.error({
+          title: "Something went Wrong. Unable to Fetch Users List.",
+          centered: true,
+        });
+      }
+    );
   };
 
   const handleDetails = (id) => {
@@ -171,8 +198,8 @@ const TeamDetails = () => {
     return filterProjectNames;
   };
 
-  const generateTableData = (data) => {
-    const temp = data.map((item, index) => {
+  const generateTableData = (tableData) => {
+    const temp = tableData.map((item, index) => {
       return {
         ID: index + 1,
         teamMemberName: item.teamMemberName,
@@ -201,16 +228,65 @@ const TeamDetails = () => {
     setResourceModal(false);
   };
   const removeResource = () => {
+    const updatedteamMembers = teamsData?.teamMembers.filter(
+      (element, index) => index !== selectedResourceId
+    );
+    setTeamsData({ ...teamsData, teamMembers: updatedteamMembers });
     setResourceModal(false);
+    generateTableData(updatedteamMembers);
   };
 
-  const addResource = () => {
+  const addResource = (resourceData) => {
+    let updatedteamMembers = teamsData ? teamsData.teamMembers : [];
+    let member = {
+      isActive: true,
+      projects: getProjectsObjectByProjectID(resourceData.projectID),
+      teamMemberDepartment: resourceData.teamMemberDepartment,
+      teamMemberEmailAddress: resourceData.teamMemberEmailAddress,
+      teamMemberId: null,
+      // here team member name is actually jiraUserAccountId
+      teamMemberJiraAccountId: resourceData.teamMemberName,
+      teamMemberName: getUserNameByUserId(resourceData.teamMemberName),
+    };
+    updatedteamMembers.push(member);
+    console.log("updatedteamMembers", updatedteamMembers);
+    setTeamsData({ ...teamsData, teamMembers: updatedteamMembers });
     setResourceModal(false);
+    generateTableData(updatedteamMembers);
   };
 
-  const updateResource = () => {
+  const updateResource = (resourceData) => {
+    let updatedteamMembers = teamsData?.teamMembers;
+    let member = {
+      isActive: true,
+      projects: getProjectsObjectByProjectID(resourceData.projectID),
+      teamMemberDepartment: resourceData.teamMemberDepartment,
+      teamMemberEmailAddress: resourceData.teamMemberEmailAddress,
+      // here team member name is actually jiraUserAccountId
+      teamMemberJiraAccountId: resourceData.teamMemberName,
+      teamMemberName: getUserNameByUserId(resourceData.teamMemberName),
+      teamMemberId: updatedteamMembers[selectedResourceId].teamMemberId,
+    };
+    updatedteamMembers[selectedResourceId] = member;
+    console.log("updatedteamMembers", updatedteamMembers);
+    setTeamsData({ ...teamsData, teamMembers: updatedteamMembers });
     setResourceModal(false);
+    generateTableData(updatedteamMembers);
   };
+
+  const getUserNameByUserId = (userId) => {
+    const user = userList.find((usr) => usr.jiraUserAccountId === userId);
+    return user.jiraUserAccountName;
+  };
+
+  const getProjectsObjectByProjectID = (projectIDs) => {
+    const filteredProjects = projects.filter((prj) =>
+      projectIDs.includes(prj.projectID)
+    );
+    console.log("final projects", filteredProjects);
+    return filteredProjects;
+  };
+
   return (
     <Layout>
       {contextHolder}
@@ -222,11 +298,16 @@ const TeamDetails = () => {
         userList={userList}
         teamMemberDepartments={teamMemberDepartments}
         modalType={modalMode}
-        onAddResource={() => {}}
+        onAddResource={(resourceData) => {
+          addResource(resourceData);
+        }}
         onRemoveResource={(id) => {
           console.log("id", id);
+          removeResource(id);
         }}
-        onUpdateResource={() => {}}
+        onUpdateResource={(resourceData) => {
+          updateResource(resourceData);
+        }}
       ></ResourcesModal>
       <Card
         className={styles.cardContainer}
@@ -340,12 +421,7 @@ const TeamDetails = () => {
 
             <Form.Item>
               <div className={styles.btnContainer}>
-                <Button
-                  style={{ color: "red", borderColor: "red" }}
-                  onClick={() => {
-                    navigate("/Teams");
-                  }}
-                >
+                <Button style={{ color: "red", borderColor: "red" }}>
                   Cancel
                 </Button>
                 <Button

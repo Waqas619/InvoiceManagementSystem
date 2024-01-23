@@ -35,9 +35,12 @@ const ResourcesModal = (props) => {
     if (modalType === "Edit") {
       console.log("formData", formData);
       form.setFieldsValue({
-        teamMemberName: formData.teamMemberName,
+        teamMemberName: formData.teamMemberJiraAccountId,
         teamMemberDepartment: formData.teamMemberDepartment,
-        projectId: formData.projects.map((project) => project.projectID),
+        projectID: formData.projects
+          ? formData.projects.map((project) => project.projectID)
+          : [],
+        teamMemberEmailAddress: formData.teamMemberEmailAddress,
       });
     }
   }, [modalType, isOpen]);
@@ -48,6 +51,11 @@ const ResourcesModal = (props) => {
     //   setLoading(false);
     //   setOpen(false);
     // }, 3000);
+    if (modalType === "Edit") {
+      onUpdateResource(values);
+    } else {
+      onAddResource(values);
+    }
     console.log(values);
     resetFormValues();
   };
@@ -61,7 +69,8 @@ const ResourcesModal = (props) => {
     form.setFieldsValue({
       teamMemberName: "",
       teamMemberDepartment: "",
-      projectId: [],
+      projectID: [],
+      teamMemberEmailAddress: "",
     });
   };
   return (
@@ -130,8 +139,8 @@ const ResourcesModal = (props) => {
             </Form.Item>
             <Form.Item
               label="Project(s)"
-              name="projectId"
-              style={{ width: "80%", marginBottom: "40px" }}
+              name="projectID"
+              style={{ width: "80%" }}
               rules={[
                 {
                   required: true,
@@ -150,6 +159,22 @@ const ResourcesModal = (props) => {
                   </Select.Option>
                 ))}
               </Select>
+            </Form.Item>
+            <Form.Item
+              name="teamMemberEmailAddress"
+              label="Email Address"
+              style={{ width: "80%", marginBottom: "40px" }}
+              rules={[
+                {
+                  required: true,
+                  message: "Please Enter Email Address!",
+                },
+              ]}
+            >
+              <Input
+                className={styles.formInputs}
+                placeholder="Enter Email Address"
+              />
             </Form.Item>
             <Form.Item>
               <div

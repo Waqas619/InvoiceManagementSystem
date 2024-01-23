@@ -421,7 +421,12 @@ const TeamDetails = () => {
 
             <Form.Item>
               <div className={styles.btnContainer}>
-                <Button style={{ color: "red", borderColor: "red" }}>
+                <Button
+                  style={{ color: "red", borderColor: "red" }}
+                  onClick={() => {
+                    navigate("/Teams");
+                  }}
+                >
                   Cancel
                 </Button>
                 <Button

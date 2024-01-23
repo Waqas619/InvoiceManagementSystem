@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Button, Modal, Form, Input, Select } from "antd";
-import { UserOutlined, MailOutlined } from "@ant-design/icons";
 import styles from "./ResourcesModal.module.css";
 const ResourcesModal = (props) => {
   const [form] = Form.useForm();
@@ -16,7 +15,6 @@ const ResourcesModal = (props) => {
       "Naseer Uddin",
       "Mirza Sawleh Baig",
     ],
-    teamId = null,
     teamMemberDepartments = [],
     formData = {},
     modalType = "Add",

@@ -15,6 +15,7 @@ const ResourcesModal = (props) => {
       "Naseer Uddin",
       "Mirza Sawleh Baig",
     ],
+    userRoles = [],
     teamMemberDepartments = [],
     formData = {},
     modalType = "Add",
@@ -34,6 +35,7 @@ const ResourcesModal = (props) => {
       console.log("formData", formData);
       form.setFieldsValue({
         teamMemberName: formData.teamMemberJiraAccountId,
+        roleName: formData.roleName,
         teamMemberDepartment: formData.teamMemberDepartment,
         projectID: formData.projects
           ? formData.projects.map((project) => project.projectID)
@@ -66,6 +68,7 @@ const ResourcesModal = (props) => {
   const resetFormValues = () => {
     form.setFieldsValue({
       teamMemberName: "",
+      roleName: "",
       teamMemberDepartment: "",
       projectID: [],
       teamMemberEmailAddress: "",
@@ -114,6 +117,33 @@ const ResourcesModal = (props) => {
                 {userList.map((item) => (
                   <Select.Option value={item.jiraUserAccountId}>
                     {item.jiraUserAccountName}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item
+              label="Role Name"
+              name="roleName"
+              style={{ width: "80%" }}
+              rules={[
+                {
+                  required: true,
+                  message: "Please Select User Role!",
+                },
+              ]}
+            >
+              <Select
+                showSearch
+                size="large"
+                placeholder="Select User Role"
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >=
+                  0
+                }
+              >
+                {userRoles.map((item) => (
+                  <Select.Option value={item.roleName}>
+                    {item.roleName}
                   </Select.Option>
                 ))}
               </Select>

@@ -13,7 +13,7 @@ import {
   getTeamsDepartments,
 } from "../../services/teams.services";
 import { getAllProjects } from "../../services/projects.services";
-import { getAllUsers } from "../../services/users.services";
+import { getAllUsers, getAllUserRoles } from "../../services/users.services";
 import { useNavigate } from "react-router-dom/dist";
 import ResourcesModal from "../../componenets/ResourcesModal";
 
@@ -33,6 +33,7 @@ const TeamDetails = () => {
   const [selectedResourceId, setSelectedResourceId] = useState(0);
   const [modalMode, setModalMode] = useState("");
   const [userList, setUserList] = useState([]);
+  const [userRoles, setUserRoles] = useState([]);
 
   const handleDelete = async () => {
     setLoadingDelete(true);
@@ -85,10 +86,17 @@ const TeamDetails = () => {
         },
         (error) => {
           console.log("error", error);
-          modal.error({
-            title: "Update Team Operation Failed",
-            content: "Something Went Wrong. Please Try Again Later!",
-          });
+          if (error.response.status === 403) {
+            modal.error({
+              title: "Update Team Operation Failed",
+              content: error.response.data.message,
+            });
+          } else {
+            modal.error({
+              title: "Update Team Operation Failed",
+              content: "Something Went Wrong. Please Try Again Later!",
+            });
+          }
           setLoadingAddTeam(false);
         }
       );
@@ -181,6 +189,19 @@ const TeamDetails = () => {
         });
       }
     );
+
+    await getAllUserRoles(
+      (usrRole) => {
+        setUserRoles(usrRole);
+      },
+      (error) => {
+        console.log("error", error);
+        modal.error({
+          title: "Something went Wrong. Unable to Fetch Users Roles.",
+          centered: true,
+        });
+      }
+    );
   };
 
   const handleDetails = (id) => {
@@ -240,6 +261,7 @@ const TeamDetails = () => {
     let updatedteamMembers = teamsData ? teamsData.teamMembers : [];
     let member = {
       isActive: true,
+      roleName: resourceData.roleName,
       projects: getProjectsObjectByProjectID(resourceData.projectID),
       teamMemberDepartment: resourceData.teamMemberDepartment,
       teamMemberEmailAddress: resourceData.teamMemberEmailAddress,
@@ -259,6 +281,7 @@ const TeamDetails = () => {
     let updatedteamMembers = teamsData?.teamMembers;
     let member = {
       isActive: true,
+      roleName: resourceData.roleName,
       projects: getProjectsObjectByProjectID(resourceData.projectID),
       teamMemberDepartment: resourceData.teamMemberDepartment,
       teamMemberEmailAddress: resourceData.teamMemberEmailAddress,
@@ -296,14 +319,14 @@ const TeamDetails = () => {
         formData={teamsData?.teamMembers[selectedResourceId]}
         projects={projects}
         userList={userList}
+        userRoles={userRoles}
         teamMemberDepartments={teamMemberDepartments}
         modalType={modalMode}
         onAddResource={(resourceData) => {
           addResource(resourceData);
         }}
-        onRemoveResource={(id) => {
-          console.log("id", id);
-          removeResource(id);
+        onRemoveResource={() => {
+          removeResource();
         }}
         onUpdateResource={(resourceData) => {
           updateResource(resourceData);

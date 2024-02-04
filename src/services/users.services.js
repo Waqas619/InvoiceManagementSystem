@@ -9,3 +9,13 @@ export const getAllUsers = (onSucess, onError) => {
       onError(error);
     });
 };
+
+export const getAllUserRoles = (onSucess, onError) => {
+  return request("roles", "get", null, true)
+    .then(async ({ data }) => {
+      onSucess(data);
+    })
+    .catch(function (error) {
+      onError(error);
+    });
+};
